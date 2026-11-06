@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../../data/models/user_model.dart';
 import '../../data/models/auth_result.dart';
 import '../../data/repositories/supabase_auth_repository.dart';
@@ -12,6 +13,7 @@ enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
 class AuthController extends ChangeNotifier {
   final AuthRepository _repository;
   StreamSubscription<AuthState>? _authSubscription;
+  RealtimeSubscriptionToken? _profileRealtimeToken;
 
   AuthController({AuthRepository? repository})
       : _repository = repository ?? SupabaseAuthRepository() {
@@ -37,6 +39,8 @@ class AuthController extends ChangeNotifier {
       _authSubscription = _repository.onAuthStateChange.listen((data) async {
         final event = data.event;
         if (event == AuthChangeEvent.signedOut) {
+          _profileRealtimeToken?.cancel();
+          _profileRealtimeToken = null;
           _user = null;
           _status = AuthStatus.unauthenticated;
           notifyListeners();
@@ -48,6 +52,7 @@ class AuthController extends ChangeNotifier {
           if (currentUser != null) {
             _user = currentUser;
             _status = AuthStatus.authenticated;
+            _subscribeToProfileRealtime(currentUser.id);
             notifyListeners();
           }
         }
@@ -68,13 +73,46 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
     try {
       _user = await _repository.getCurrentUser();
-      _status =
-          _user != null ? AuthStatus.authenticated : AuthStatus.unauthenticated;
+      if (_user != null) {
+        _status = AuthStatus.authenticated;
+        _subscribeToProfileRealtime(_user!.id);
+      } else {
+        _status = AuthStatus.unauthenticated;
+      }
     } catch (_) {
       _user = null;
       _status = AuthStatus.unauthenticated;
     }
     notifyListeners();
+  }
+
+  void _subscribeToProfileRealtime(String userId) {
+    if (_profileRealtimeToken != null) return;
+    _profileRealtimeToken = _repository.subscribeToUserProfile(
+      userId: userId,
+      onUpdated: (record) async {
+        final isActive = record['is_active'] as bool?;
+        if (isActive == false) {
+          await logout();
+          _errorMessage = 'تم تعطيل الحساب من قِبل إدارة المنصة.';
+          notifyListeners();
+          return;
+        }
+        // تحديث بيانات البروفايل تلقائياً
+        final updated = await _repository.getCurrentUser();
+        if (updated != null) {
+          _user = updated;
+          notifyListeners();
+        }
+      },
+      onResync: () async {
+        final updated = await _repository.getCurrentUser();
+        if (updated != null) {
+          _user = updated;
+          notifyListeners();
+        }
+      },
+    );
   }
 
   Future<bool> login(String identifier, String password) async {
@@ -161,6 +199,8 @@ class AuthController extends ChangeNotifier {
   }
 
   Future<void> logout() async {
+    _profileRealtimeToken?.cancel();
+    _profileRealtimeToken = null;
     try {
       await _repository.logout();
     } catch (_) {}
@@ -209,6 +249,7 @@ class AuthController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _profileRealtimeToken?.cancel();
     _authSubscription?.cancel();
     super.dispose();
   }

@@ -17,23 +17,19 @@ class HomeController extends ChangeNotifier {
   }
 
   void _initRealtime() {
-    // 1. الاستماع لتحديثات التصنيفات لحظياً في تطبيق العميل
+    // 1. الاستماع لتحديثات التصنيفات لحظياً عبر المستودع
     _realtimeTokens.add(
-      SupabaseRealtimeService.instance.subscribeTable(
-        table: 'categories',
-        onInserted: (_) => _reloadCategories(),
-        onUpdated: (_) => _reloadCategories(),
-        onDeleted: (_) => _reloadCategories(),
+      _repository.subscribeToCategories(
+        onData: _reloadCategories,
+        onResync: loadHomeData,
       ),
     );
 
-    // 2. الاستماع لتحديثات الخدمات لحظياً (إضافة، تعديل، إيقاف، حذف)
+    // 2. الاستماع لتحديثات الخدمات لحظياً (إضافة، تعديل، إيقاف، حذف) عبر المستودع
     _realtimeTokens.add(
-      SupabaseRealtimeService.instance.subscribeTable(
-        table: 'services',
-        onInserted: (_) => _reloadServices(),
-        onUpdated: (_) => _reloadServices(),
-        onDeleted: (_) => _reloadServices(),
+      _repository.subscribeToServices(
+        onData: _reloadServices,
+        onResync: loadHomeData,
       ),
     );
 
@@ -157,14 +153,35 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> toggleFavorite(String serviceId) async {
-    await _repository.toggleFavorite(serviceId);
+  Future<bool> toggleFavorite(String serviceId) async {
     final index = _allServices.indexWhere((s) => s.id == serviceId);
+    final currentStatus = index != -1 ? _allServices[index].isFavorite : false;
+    final newStatus = !currentStatus;
+
+    // تحديث فوري وسريع للواجهة
     if (index != -1) {
       _allServices[index] = _allServices[index].copyWith(
-        isFavorite: !_allServices[index].isFavorite,
+        isFavorite: newStatus,
       );
       notifyListeners();
+    }
+
+    try {
+      if (newStatus) {
+        await _repository.addFavorite(serviceId);
+      } else {
+        await _repository.removeFavorite(serviceId);
+      }
+      return newStatus;
+    } catch (e) {
+      // تراجع فوري عند حدوث خطأ
+      if (index != -1) {
+        _allServices[index] = _allServices[index].copyWith(
+          isFavorite: currentStatus,
+        );
+        notifyListeners();
+      }
+      rethrow;
     }
   }
 

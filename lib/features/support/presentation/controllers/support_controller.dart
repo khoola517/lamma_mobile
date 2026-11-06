@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import '../../../../core/config/supabase_config.dart';
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../../domain/repositories/support_repository.dart';
 import '../../data/models/complaint_model.dart';
 import '../../data/models/complaint_category_model.dart';
 
 class SupportController extends ChangeNotifier {
   final SupportRepository repository;
+  final List<RealtimeSubscriptionToken> _realtimeTokens = [];
 
   SupportController({required this.repository}) {
     loadCategories();
@@ -93,11 +96,57 @@ class SupportController extends ChangeNotifier {
 
   void onAuthChanged(bool isAuthenticated) {
     if (isAuthenticated) {
+      _subscribeToRealtime();
       loadCategories();
       loadComplaints();
     } else {
+      _unsubscribeRealtime();
       _complaints = [];
       notifyListeners();
     }
+  }
+
+  void _subscribeToRealtime() {
+    _unsubscribeRealtime();
+    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    // 1. مزامنة الشكاوى الخاصة بالمستخدم
+    _realtimeTokens.add(
+      repository.subscribeToUserComplaints(
+        userId: userId,
+        onData: loadComplaints,
+        onResync: loadComplaints,
+      ),
+    );
+
+    // 2. مزامنة تصنيفات الشكاوى
+    _realtimeTokens.add(
+      repository.subscribeToComplaintCategories(
+        onData: loadCategories,
+        onResync: loadCategories,
+      ),
+    );
+
+    // 3. إعادة المزامنة عند استعادة الاتصال
+    _realtimeTokens.add(
+      SupabaseRealtimeService.instance.onReconnected(() {
+        loadCategories();
+        loadComplaints();
+      }),
+    );
+  }
+
+  void _unsubscribeRealtime() {
+    for (final token in _realtimeTokens) {
+      token.cancel();
+    }
+    _realtimeTokens.clear();
+  }
+
+  @override
+  void dispose() {
+    _unsubscribeRealtime();
+    super.dispose();
   }
 }

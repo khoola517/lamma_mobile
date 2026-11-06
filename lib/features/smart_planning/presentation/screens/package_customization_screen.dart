@@ -34,7 +34,7 @@ class _PackageCustomizationScreenState
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_forward_rounded),
+          icon: const Icon(Icons.arrow_back,color: AppColors.primary,),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -391,7 +391,7 @@ class _PackageCustomizationScreenState
                       Expanded(
                         child: CustomButton(
                           text: AppStrings.confirmBooking,
-                          icon: Icons.arrow_back_rounded,
+                          //icon: Icons.arrow_back_rounded,
                           isIconTrailing: true,
                           height: 48,
                           isLoading: _isSubmitting ||

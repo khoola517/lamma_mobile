@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../../data/models/user_model.dart';
 import '../../data/models/auth_result.dart';
 import '../../data/utils/auth_exception_handler.dart';
@@ -238,5 +239,22 @@ class SupabaseAuthRepository implements AuthRepository {
         );
 
     return _client.storage.from('avatars').getPublicUrl(storagePath);
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToUserProfile({
+    required String userId,
+    required void Function(Map<String, dynamic> record) onUpdated,
+    void Function()? onResync,
+  }) {
+    return SupabaseRealtimeService.instance.subscribeToProfiles(
+      userId: userId,
+      onData: (payload) {
+        if (payload.newRecord.isNotEmpty) {
+          onUpdated(payload.newRecord);
+        }
+      },
+      onResync: onResync,
+    );
   }
 }

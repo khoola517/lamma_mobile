@@ -351,9 +351,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
                           final service = filteredServices[index];
                           FavoritesController? favCtrl;
                           try {
-                            favCtrl = Provider.of<FavoritesController>(context);
+                            favCtrl = context.watch<FavoritesController>();
                           } catch (_) {}
-                          final isFav = (favCtrl != null && !(favCtrl.isLoading && favCtrl.isEmpty))
+                          final isFav = (favCtrl != null && favCtrl.isInitialized)
                               ? favCtrl.isFavorite(service.id)
                               : service.isFavorite;
                           return ServiceCard(
@@ -370,7 +370,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                 AppRoutes.serviceDetails,
                                 arguments: service,
                               );
-                              favController.loadFavorites();
+                              favController.loadFavorites(silent: true);
                             },
                             onFavoriteToggle: () {
                               _handleFavoriteToggle(service.id);
@@ -410,9 +410,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
     }
 
     try {
-      await context.read<HomeController>().toggleFavorite(serviceId);
-      if (!mounted) return;
-      context.read<FavoritesController>().loadFavorites();
+      final homeController = context.read<HomeController>();
+      final favoritesController = context.read<FavoritesController>();
+
+      final isNowFav = await homeController.toggleFavorite(serviceId);
+      if (isNowFav) {
+        final service = homeController.allServices.firstWhere(
+          (s) => s.id == serviceId,
+        );
+        favoritesController.addFavoriteLocally(service);
+      } else {
+        favoritesController.removeFavoriteLocally(serviceId);
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

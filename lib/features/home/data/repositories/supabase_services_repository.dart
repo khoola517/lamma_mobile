@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../models/category_model.dart';
 import '../models/service_item_model.dart';
 import '../../domain/repositories/services_repository.dart';
@@ -58,34 +59,42 @@ class SupabaseServicesRepository implements ServicesRepository {
   @override
   Future<List<ServiceItemModel>> getServicesByCategoryId(String categoryId) async {
     final userId = _client.auth.currentUser?.id;
+    final uuidRegex = RegExp(
+        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
 
-    // Fetch active services specifically belonging to this category using the foreign key
-    final response = await _client
-        .from('services')
-        .select('*, categories(name), service_images(image_url), provider_profiles(business_name, address)')
-        .eq('category_id', categoryId)
-        .eq('status', 'active')
-        .order('created_at', ascending: false);
-
-    Set<String> userFavorites = {};
-    if (userId != null) {
+    if (uuidRegex.hasMatch(categoryId)) {
       try {
-        final favs = await _client
-            .from('favorites')
-            .select('service_id')
-            .eq('user_id', userId);
-        userFavorites = (favs as List)
-            .map((f) => f['service_id'] as String)
-            .toSet();
+        final response = await _client
+            .from('services')
+            .select('*, categories(name), service_images(image_url), provider_profiles(business_name, address)')
+            .eq('category_id', categoryId)
+            .eq('status', 'active')
+            .order('created_at', ascending: false);
+
+        Set<String> userFavorites = {};
+        if (userId != null) {
+          try {
+            final favs = await _client
+                .from('favorites')
+                .select('service_id')
+                .eq('user_id', userId);
+            userFavorites = (favs as List)
+                .map((f) => f['service_id'] as String)
+                .toSet();
+          } catch (_) {}
+        }
+
+        return (response as List).map((e) {
+          final model = ServiceItemModel.fromJson(e as Map<String, dynamic>);
+          return model.copyWith(isFavorite: userFavorites.contains(model.id));
+        }).toList();
       } catch (e) {
-        // إذا حدث خطأ في استعلام المفضلة نتجاوزه
+        // إذا حدث خطأ في الاستعلام المخصص نحاول جلب الخدمات من الكل كاحتياط
       }
     }
 
-    return (response as List).map((e) {
-      final model = ServiceItemModel.fromJson(e as Map<String, dynamic>);
-      return model.copyWith(isFavorite: userFavorites.contains(model.id));
-    }).toList();
+    final all = await getAllServices();
+    return all.where((s) => s.categoryId == categoryId || s.category == categoryId).toList();
   }
 
   @override
@@ -177,6 +186,40 @@ class SupabaseServicesRepository implements ServicesRepository {
   }
 
   @override
+  Future<void> addFavorite(String serviceId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      throw Exception('يرجى تسجيل الدخول لحفظ الخدمة في المفضلة.');
+    }
+
+    final existing = await _client
+        .from('favorites')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('service_id', serviceId)
+        .maybeSingle();
+
+    if (existing == null) {
+      await _client.from('favorites').insert({
+        'user_id': userId,
+        'service_id': serviceId,
+      });
+    }
+  }
+
+  @override
+  Future<void> removeFavorite(String serviceId) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    await _client
+        .from('favorites')
+        .delete()
+        .eq('user_id', userId)
+        .eq('service_id', serviceId);
+  }
+
+  @override
   Future<List<ServiceItemModel>> getFavoriteServices() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
@@ -235,5 +278,40 @@ class SupabaseServicesRepository implements ServicesRepository {
         .maybeSingle();
 
     return existing != null;
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToCategories({
+    required void Function() onData,
+    void Function()? onResync,
+  }) {
+    return SupabaseRealtimeService.instance.subscribeToCategories(
+      onData: (_) => onData(),
+      onResync: onResync,
+    );
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToServices({
+    required void Function() onData,
+    void Function()? onResync,
+  }) {
+    return SupabaseRealtimeService.instance.subscribeToServices(
+      onData: (_) => onData(),
+      onResync: onResync,
+    );
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToFavorites({
+    required String userId,
+    required void Function() onData,
+    void Function()? onResync,
+  }) {
+    return SupabaseRealtimeService.instance.subscribeToFavorites(
+      userId: userId,
+      onData: (_) => onData(),
+      onResync: onResync,
+    );
   }
 }

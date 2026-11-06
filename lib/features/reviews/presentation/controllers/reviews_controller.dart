@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../../domain/repositories/reviews_repository.dart';
 import '../../data/models/review_model.dart';
 
 class ReviewsController extends ChangeNotifier {
   final ReviewsRepository repository;
+  RealtimeSubscriptionToken? _reviewsToken;
 
   ReviewsController({required this.repository});
 
@@ -28,7 +30,16 @@ class ReviewsController extends ChangeNotifier {
   int get totalReviewsCount => _reviews.length;
 
   Future<void> loadServiceReviews(String serviceId) async {
-    _activeServiceId = serviceId;
+    if (_activeServiceId != serviceId || _reviewsToken == null) {
+      _reviewsToken?.cancel();
+      _activeServiceId = serviceId;
+      _reviewsToken = repository.subscribeToServiceReviews(
+        serviceId: serviceId,
+        onData: () => _reloadSilently(serviceId),
+        onResync: () => loadServiceReviews(serviceId),
+      );
+    }
+
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -41,6 +52,14 @@ class ReviewsController extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> _reloadSilently(String serviceId) async {
+    try {
+      final updated = await repository.getServiceReviews(serviceId);
+      _reviews = updated;
+      notifyListeners();
+    } catch (_) {}
   }
 
   Future<bool> submitReview({
@@ -71,5 +90,11 @@ class ReviewsController extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  @override
+  void dispose() {
+    _reviewsToken?.cancel();
+    super.dispose();
   }
 }

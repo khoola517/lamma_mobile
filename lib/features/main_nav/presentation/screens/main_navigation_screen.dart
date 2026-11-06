@@ -39,7 +39,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       _currentIndex = index;
     });
     if (index == 2) {
-      context.read<FavoritesController>().loadFavorites();
+      final favCtrl = context.read<FavoritesController>();
+      favCtrl.loadFavorites(silent: favCtrl.isInitialized);
     } else if (index == 3) {
       context.read<BookingsController>().loadBookings();
     }

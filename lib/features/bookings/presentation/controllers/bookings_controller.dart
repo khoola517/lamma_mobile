@@ -67,31 +67,45 @@ class BookingsController extends ChangeNotifier {
 
   void _subscribeToBookingsRealtime() {
     _unsubscribeRealtime();
+    if (!SupabaseConfig.hasClient) return;
     final userId = SupabaseConfig.client.auth.currentUser?.id;
-    if (userId == null) return;
+    debugPrint('BookingsController: Subscribing to Realtime (userId: $userId)');
 
-    // 1. مزامنة حجوزات العميل عند تحديث حالتها من مقدم الخدمة أو الأدمن
+    // 1. مزامنة حجوزات العميل عند تحديث حالتها من مقدم الخدمة أو الأدمن عبر المستودع
     _realtimeTokens.add(
-      SupabaseRealtimeService.instance.subscribeTable(
-        table: 'bookings',
-        filter: 'customer_id=eq.$userId',
-        onInserted: (_) => loadBookings(),
-        onUpdated: (_) => loadBookings(),
-        onDeleted: (_) => loadBookings(),
+      _repository.subscribeToCustomerBookings(
+        customerId: userId ?? '',
+        onData: () {
+          debugPrint('BookingsController: Realtime update received on bookings -> reloading');
+          loadBookings(silent: true);
+        },
+        onResync: loadBookings,
       ),
     );
 
-    // 2. مزامنة تفاصيل الخدمات في الحجز
+    // 2. مزامنة تفاصيل الخدمات في الحجز عبر المستودع
     _realtimeTokens.add(
-      SupabaseRealtimeService.instance.subscribeTable(
-        table: 'booking_items',
-        onInserted: (_) => loadBookings(),
-        onUpdated: (_) => loadBookings(),
-        onDeleted: (_) => loadBookings(),
+      _repository.subscribeToBookingItems(
+        onData: () {
+          debugPrint('BookingsController: Realtime update received on booking_items -> reloading');
+          loadBookings(silent: true);
+        },
+        onResync: loadBookings,
       ),
     );
 
-    // 3. إعادة المزامنة عند عودة الاتصال
+    // 3. مزامنة سجل الحالات والتدقيق عبر المستودع
+    _realtimeTokens.add(
+      _repository.subscribeToBookingStatusHistory(
+        onData: () {
+          debugPrint('BookingsController: Realtime update received on booking_status_history -> reloading');
+          loadBookings(silent: true);
+        },
+        onResync: loadBookings,
+      ),
+    );
+
+    // 4. إعادة المزامنة عند عودة الاتصال
     _realtimeTokens.add(
       SupabaseRealtimeService.instance.onReconnected(() {
         loadBookings();
@@ -112,16 +126,20 @@ class BookingsController extends ChangeNotifier {
     super.dispose();
   }
 
-  Future<void> loadBookings() async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<void> loadBookings({bool silent = false}) async {
+    if (!silent) {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     try {
       final remoteBookings = await _repository.getMyBookings();
       _bookings = remoteBookings;
+      debugPrint('BookingsController: Loaded ${_bookings.length} bookings');
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
+      debugPrint('BookingsController: Error loading bookings: $e');
     } finally {
       _isLoading = false;
       notifyListeners();

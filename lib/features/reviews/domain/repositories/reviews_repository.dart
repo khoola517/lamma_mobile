@@ -1,3 +1,4 @@
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../../data/models/review_model.dart';
 
 abstract class ReviewsRepository {
@@ -7,5 +8,11 @@ abstract class ReviewsRepository {
     String? bookingId,
     required int rating,
     required String comment,
+  });
+
+  RealtimeSubscriptionToken subscribeToServiceReviews({
+    required String serviceId,
+    required void Function() onData,
+    void Function()? onResync,
   });
 }

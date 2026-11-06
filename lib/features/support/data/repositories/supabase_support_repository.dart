@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../../domain/repositories/support_repository.dart';
 import '../models/complaint_model.dart';
 import '../models/complaint_category_model.dart';
@@ -131,5 +132,32 @@ class SupabaseSupportRepository implements SupportRepository {
     return RegExp(
       r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
     ).hasMatch(str);
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToUserComplaints({
+    required String userId,
+    required void Function() onData,
+    void Function()? onResync,
+  }) {
+    return SupabaseRealtimeService.instance.subscribeTable(
+      table: 'complaints',
+      filter: 'user_id=eq.$userId',
+      onInserted: (_) => onData(),
+      onUpdated: (_) => onData(),
+      onDeleted: (_) => onData(),
+      onResync: onResync,
+    );
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToComplaintCategories({
+    required void Function() onData,
+    void Function()? onResync,
+  }) {
+    return SupabaseRealtimeService.instance.subscribeToComplaintCategories(
+      onData: (_) => onData(),
+      onResync: onResync,
+    );
   }
 }

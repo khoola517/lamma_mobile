@@ -120,7 +120,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     arguments: service,
                   )
                   .then((_) {
-                favoritesController.loadFavorites();
+                favoritesController.loadFavorites(silent: true);
               });
             },
             onFavoriteToggle: () async {

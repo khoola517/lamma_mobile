@@ -31,8 +31,8 @@ class SmartPlanResultScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_forward_rounded),
+         leading: IconButton(
+          icon: const Icon(Icons.arrow_back,color: AppColors.primary,),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
@@ -447,7 +447,7 @@ class SmartPlanResultScreen extends StatelessWidget {
                   text: controller.savedPackageId != null
                       ? 'متابعة وتخصيص الباقة المحفوظة'
                       : 'اختيار هذه الباقة وتخصيصها',
-                  icon: Icons.check_circle_outline_rounded,
+                  //icon: Icons.check_circle_outline_rounded,
                   isLoading: controller.isSavingPackage,
                   onPressed: () => _onProceedWithPackage(context, controller),
                 ),

@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../models/booking_model.dart';
 import '../../domain/repositories/bookings_repository.dart';
 
@@ -288,5 +289,40 @@ class SupabaseBookingsRepository implements BookingsRepository {
         });
       }
     } catch (_) {}
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToCustomerBookings({
+    required String customerId,
+    required void Function() onData,
+    void Function()? onResync,
+  }) {
+    return SupabaseRealtimeService.instance.subscribeToBookings(
+      customerId: customerId,
+      onData: (_) => onData(),
+      onResync: onResync,
+    );
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToBookingItems({
+    required void Function() onData,
+    void Function()? onResync,
+  }) {
+    return SupabaseRealtimeService.instance.subscribeToBookingItems(
+      onData: (_) => onData(),
+      onResync: onResync,
+    );
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToBookingStatusHistory({
+    required void Function() onData,
+    void Function()? onResync,
+  }) {
+    return SupabaseRealtimeService.instance.subscribeToBookingStatusHistory(
+      onData: (_) => onData(),
+      onResync: onResync,
+    );
   }
 }

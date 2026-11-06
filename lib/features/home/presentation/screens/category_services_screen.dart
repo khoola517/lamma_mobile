@@ -38,33 +38,83 @@ class _CategoryServicesScreenState extends State<CategoryServicesScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadServices();
+      context.read<HomeController>().addListener(_onHomeDataChanged);
     });
   }
 
-  Future<void> _loadServices() async {
+  void _onHomeDataChanged() {
     if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    _loadServices(silent: true);
+  }
+
+  @override
+  void dispose() {
+    try {
+      context.read<HomeController>().removeListener(_onHomeDataChanged);
+    } catch (_) {}
+    super.dispose();
+  }
+
+  Future<void> _loadServices({bool silent = false}) async {
+    if (!mounted) return;
+
+    final homeController = context.read<HomeController>();
+
+    // 1. فحص الخدمات المتاحة مسبقاً في الذاكرة لتجنب أي شاشة خطأ إنترنت زائفة
+    final cachedServices = homeController.allServices.where((s) {
+      final matchesId = s.categoryId == widget.category.id;
+      final catTitle = widget.category.title.trim();
+      final matchesName = catTitle.isNotEmpty &&
+          (s.category.trim() == catTitle ||
+              s.category.contains(catTitle) ||
+              catTitle.contains(s.category));
+      return matchesId || matchesName;
+    }).toList();
+
+    if (cachedServices.isNotEmpty && _services.isEmpty) {
+      setState(() {
+        _services = cachedServices;
+        _isLoading = false;
+        _errorMessage = null;
+      });
+      silent = true;
+    }
+
+    if (!silent && _services.isEmpty) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
 
     try {
-      final homeController = context.read<HomeController>();
       final result =
           await homeController.getServicesByCategoryId(widget.category.id);
       if (mounted) {
         setState(() {
-          _services = result;
+          if (result.isNotEmpty || _services.isEmpty) {
+            _services = result.isNotEmpty ? result : cachedServices;
+          }
           _isLoading = false;
+          _errorMessage = null;
         });
       }
     } catch (e) {
+      debugPrint('CategoryServicesScreen: Error loading services: $e');
       if (mounted) {
-        setState(() {
-          _errorMessage =
-              'حدث خطأ أثناء تحميل الخدمات. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.';
-          _isLoading = false;
-        });
+        if (_services.isNotEmpty || cachedServices.isNotEmpty) {
+          setState(() {
+            if (_services.isEmpty) _services = cachedServices;
+            _isLoading = false;
+            _errorMessage = null;
+          });
+        } else if (!silent) {
+          setState(() {
+            _errorMessage =
+                'تعذر تحميل خدمات هذا التصنيف حالياً. يرجى التحقق من اتصال الإنترنت وإعادة المحاولة.';
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -93,17 +143,26 @@ class _CategoryServicesScreenState extends State<CategoryServicesScreen> {
 
     try {
       final homeController = context.read<HomeController>();
-      await homeController.toggleFavorite(serviceId);
+      final favoritesController = context.read<FavoritesController>();
+
+      final isNowFav = await homeController.toggleFavorite(serviceId);
       if (mounted) {
         setState(() {
           final index = _services.indexWhere((s) => s.id == serviceId);
           if (index != -1) {
             _services[index] = _services[index].copyWith(
-              isFavorite: !_services[index].isFavorite,
+              isFavorite: isNowFav,
             );
           }
         });
-        context.read<FavoritesController>().loadFavorites();
+      }
+      if (_services.any((item) => item.id == serviceId)) {
+        final s = _services.firstWhere((item) => item.id == serviceId);
+        if (isNowFav) {
+          favoritesController.addFavoriteLocally(s.copyWith(isFavorite: true));
+        } else {
+          favoritesController.removeFavoriteLocally(serviceId);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -187,13 +246,13 @@ class _CategoryServicesScreenState extends State<CategoryServicesScreen> {
         padding: const EdgeInsets.only(top: 16, bottom: 32),
         itemCount: _services.length,
         separatorBuilder: (_, __) => const SizedBox(height: 14),
-        itemBuilder: (_, index) {
+        itemBuilder: (context, index) {
           final service = _services[index];
           FavoritesController? favCtrl;
           try {
-            favCtrl = Provider.of<FavoritesController>(context);
+            favCtrl = context.watch<FavoritesController>();
           } catch (_) {}
-          final isFav = (favCtrl != null && !(favCtrl.isLoading && favCtrl.isEmpty))
+          final isFav = (favCtrl != null && favCtrl.isInitialized)
               ? favCtrl.isFavorite(service.id)
               : service.isFavorite;
           return ServiceCard(
@@ -210,7 +269,9 @@ class _CategoryServicesScreenState extends State<CategoryServicesScreen> {
                 arguments: service,
               ).then((_) {
                 if (mounted) {
-                  context.read<FavoritesController>().loadFavorites();
+                  try {
+                    context.read<FavoritesController>().loadFavorites(silent: true);
+                  } catch (_) {}
                 }
               });
             },

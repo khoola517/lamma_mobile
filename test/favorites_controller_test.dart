@@ -49,6 +49,22 @@ class MockTestServicesRepository implements ServicesRepository {
   }
 
   @override
+  Future<void> addFavorite(String serviceId) async {
+    final index = _services.indexWhere((s) => s.id == serviceId);
+    if (index != -1) {
+      _services[index] = _services[index].copyWith(isFavorite: true);
+    }
+  }
+
+  @override
+  Future<void> removeFavorite(String serviceId) async {
+    final index = _services.indexWhere((s) => s.id == serviceId);
+    if (index != -1) {
+      _services[index] = _services[index].copyWith(isFavorite: false);
+    }
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 

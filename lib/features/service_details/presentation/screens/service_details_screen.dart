@@ -39,9 +39,9 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
       (s) => s.id == widget.service.id,
       orElse: () => widget.service,
     );
-    final isFav = favoritesController.isLoading && favoritesController.isEmpty
-        ? homeItem.isFavorite
-        : favoritesController.isFavorite(widget.service.id);
+    final isFav = favoritesController.isInitialized
+        ? favoritesController.isFavorite(widget.service.id)
+        : homeItem.isFavorite;
     final currentItem = homeItem.copyWith(isFavorite: isFav);
 
     // الصور الحقيقية من Supabase
@@ -196,9 +196,11 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                       }
 
                                       try {
-                                        await homeController.toggleFavorite(currentItem.id);
-                                        if (context.mounted) {
-                                          context.read<FavoritesController>().loadFavorites();
+                                        final isNowFav = await homeController.toggleFavorite(currentItem.id);
+                                        if (isNowFav) {
+                                          favoritesController.addFavoriteLocally(currentItem.copyWith(isFavorite: true));
+                                        } else {
+                                          favoritesController.removeFavoriteLocally(currentItem.id);
                                         }
                                       } catch (e) {
                                         if (context.mounted) {

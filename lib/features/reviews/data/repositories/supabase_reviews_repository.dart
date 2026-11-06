@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../../domain/repositories/reviews_repository.dart';
 import '../models/review_model.dart';
 
@@ -53,5 +54,18 @@ class SupabaseReviewsRepository implements ReviewsRepository {
       'rating': rating,
       'comment': comment.trim(),
     });
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToServiceReviews({
+    required String serviceId,
+    required void Function() onData,
+    void Function()? onResync,
+  }) {
+    return SupabaseRealtimeService.instance.subscribeToReviews(
+      serviceId: serviceId,
+      onData: (_) => onData(),
+      onResync: onResync,
+    );
   }
 }

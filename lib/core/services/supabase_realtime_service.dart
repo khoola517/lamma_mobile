@@ -73,7 +73,27 @@ class SupabaseRealtimeService {
   factory SupabaseRealtimeService() => _instance;
   static SupabaseRealtimeService get instance => _instance;
 
-  SupabaseRealtimeService._internal();
+  SupabaseRealtimeService._internal() {
+    _initAuthListener();
+  }
+
+  void _initAuthListener() {
+    if (!isReady) return;
+    try {
+      _client.auth.onAuthStateChange.listen((data) {
+        final session = data.session;
+        final token = session?.accessToken;
+        if (token != null) {
+          try {
+            _client.realtime.setAuth(token);
+            debugPrint('SupabaseRealtime: Synced WebSocket token for ${data.event}');
+          } catch (e) {
+            debugPrint('SupabaseRealtime: Note on setAuth: $e');
+          }
+        }
+      });
+    } catch (_) {}
+  }
 
   SupabaseClient get _client => SupabaseConfig.client;
 
@@ -349,24 +369,16 @@ class SupabaseRealtimeService {
 
   /// 3. Bookings Realtime
   /// Listens for new bookings, status changes, cancellations, and completions.
-  /// If customerId is given, filters by customer_id.
   RealtimeSubscriptionToken subscribeToBookings({
     String? customerId,
     required RealtimeChangeCallback onData,
     RealtimeResyncCallback? onResync,
   }) {
-    PostgresChangeFilter? filter;
-    if (customerId != null && customerId.isNotEmpty) {
-      filter = PostgresChangeFilter(
-        type: PostgresChangeFilterType.eq,
-        column: 'customer_id',
-        value: customerId,
-      );
-    }
-
+    // Note: Supabase RLS already enforces that users can only receive their own bookings.
+    // Subscribing to the table directly ensures that UPDATE and status changes
+    // are never dropped due to filter matching issues on modified columns.
     return subscribeToTable(
       table: 'bookings',
-      filter: filter,
       onData: onData,
       onResync: onResync,
     );
@@ -525,6 +537,65 @@ class SupabaseRealtimeService {
     return subscribeToTable(
       table: 'profiles',
       filter: filter,
+      onData: onData,
+      onResync: onResync,
+    );
+  }
+
+  /// 12. Booking Status History Realtime
+  /// Listens for booking lifecycle audit events (old_status -> new_status transitions)
+  RealtimeSubscriptionToken subscribeToBookingStatusHistory({
+    String? bookingId,
+    required RealtimeChangeCallback onData,
+    RealtimeResyncCallback? onResync,
+  }) {
+    PostgresChangeFilter? filter;
+    if (bookingId != null && bookingId.isNotEmpty) {
+      filter = PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'booking_id',
+        value: bookingId,
+      );
+    }
+
+    return subscribeToTable(
+      table: 'booking_status_history',
+      filter: filter,
+      onData: onData,
+      onResync: onResync,
+    );
+  }
+
+  /// 13. Service Availability Realtime
+  RealtimeSubscriptionToken subscribeToServiceAvailability({
+    String? serviceId,
+    required RealtimeChangeCallback onData,
+    RealtimeResyncCallback? onResync,
+  }) {
+    PostgresChangeFilter? filter;
+    if (serviceId != null && serviceId.isNotEmpty) {
+      filter = PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'service_id',
+        value: serviceId,
+      );
+    }
+
+    return subscribeToTable(
+      table: 'service_availability',
+      filter: filter,
+      onData: onData,
+      onResync: onResync,
+    );
+  }
+
+  /// 14. Complaint Categories Realtime
+  RealtimeSubscriptionToken subscribeToComplaintCategories({
+    required RealtimeChangeCallback onData,
+    RealtimeResyncCallback? onResync,
+  }) {
+    return subscribeToTable(
+      table: 'complaint_categories',
       onData: onData,
       onResync: onResync,
     );

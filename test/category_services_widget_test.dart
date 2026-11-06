@@ -16,6 +16,8 @@ import 'package:khadematy/features/home/presentation/screens/home_screen.dart';
 import 'package:khadematy/features/home/presentation/screens/category_services_screen.dart';
 import 'package:khadematy/features/notifications/presentation/controllers/notifications_controller.dart';
 import 'package:khadematy/features/notifications/domain/repositories/notifications_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:khadematy/core/services/supabase_realtime_service.dart';
 
 class _MockHttpOverrides extends HttpOverrides {
   @override
@@ -139,6 +141,12 @@ class _FakeServicesRepository implements ServicesRepository {
   Future<void> toggleFavorite(String serviceId) async {}
 
   @override
+  Future<void> addFavorite(String serviceId) async {}
+
+  @override
+  Future<void> removeFavorite(String serviceId) async {}
+
+  @override
   Future<List<ServiceItemModel>> getFavoriteServices() async {
     return [];
   }
@@ -146,6 +154,40 @@ class _FakeServicesRepository implements ServicesRepository {
   @override
   Future<bool> isFavorite(String serviceId) async {
     return false;
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToCategories({
+    required void Function() onData,
+    void Function()? onResync,
+  }) {
+    return const RealtimeSubscriptionToken(
+      channelKey: 'test_categories',
+      listenerId: 'test_1',
+    );
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToServices({
+    required void Function() onData,
+    void Function()? onResync,
+  }) {
+    return const RealtimeSubscriptionToken(
+      channelKey: 'test_services',
+      listenerId: 'test_2',
+    );
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToFavorites({
+    required String userId,
+    required void Function() onData,
+    void Function()? onResync,
+  }) {
+    return const RealtimeSubscriptionToken(
+      channelKey: 'test_favorites',
+      listenerId: 'test_3',
+    );
   }
 }
 
@@ -158,6 +200,18 @@ class _FakeNotificationsRepository implements NotificationsRepository {
   Future<void> markAsRead(String notificationId) async {}
   @override
   Future<void> markAllAsRead() async {}
+
+  @override
+  RealtimeSubscriptionToken subscribeToUserNotifications({
+    required String userId,
+    required void Function(Map<String, dynamic> record, PostgresChangeEvent event) onData,
+    void Function()? onResync,
+  }) {
+    return const RealtimeSubscriptionToken(
+      channelKey: 'test_notifications',
+      listenerId: 'test_4',
+    );
+  }
 }
 
 void main() {

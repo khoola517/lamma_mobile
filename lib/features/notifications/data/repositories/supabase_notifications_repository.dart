@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../../domain/repositories/notifications_repository.dart';
 import '../../presentation/controllers/notifications_controller.dart';
 
@@ -95,5 +96,21 @@ class SupabaseNotificationsRepository implements NotificationsRepository {
         .from('notifications')
         .update({'is_read': true})
         .eq('user_id', userId);
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToUserNotifications({
+    required String userId,
+    required void Function(Map<String, dynamic> record, PostgresChangeEvent event) onData,
+    void Function()? onResync,
+  }) {
+    return SupabaseRealtimeService.instance.subscribeToNotifications(
+      userId: userId,
+      onData: (payload) {
+        final record = payload.newRecord.isNotEmpty ? payload.newRecord : payload.oldRecord;
+        onData(record, payload.eventType);
+      },
+      onResync: onResync,
+    );
   }
 }

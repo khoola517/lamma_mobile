@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../../data/models/user_model.dart';
 import '../../data/models/auth_result.dart';
 
@@ -26,6 +27,12 @@ abstract class AuthRepository {
   Future<String> uploadAvatar({
     required Uint8List imageBytes,
     required String fileExtension,
+  });
+
+  RealtimeSubscriptionToken subscribeToUserProfile({
+    required String userId,
+    required void Function(Map<String, dynamic> record) onUpdated,
+    void Function()? onResync,
   });
 }
 

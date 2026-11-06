@@ -64,19 +64,19 @@ class NotificationsController extends ChangeNotifier {
     }
   }
 
-  /// الاشتراك في تدفق البث اللحظي (Supabase Realtime)
+  /// الاشتراك في تدفق البث اللحظي عبر المستودع
   void _subscribeToRealtime() {
     _unsubscribeFromRealtime();
     final userId = SupabaseConfig.client.auth.currentUser?.id;
     if (userId == null) return;
 
     _realtimeTokens.add(
-      SupabaseRealtimeService.instance.subscribeTable(
-        table: 'notifications',
-        filter: 'user_id=eq.$userId',
-        onInserted: (_) => loadNotifications(),
-        onUpdated: (_) => loadNotifications(),
-        onDeleted: (_) => loadNotifications(),
+      _repository.subscribeToUserNotifications(
+        userId: userId,
+        onData: (record, event) {
+          loadNotifications();
+        },
+        onResync: loadNotifications,
       ),
     );
 

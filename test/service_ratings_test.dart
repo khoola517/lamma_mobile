@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:khadematy/core/services/supabase_realtime_service.dart';
 import 'package:khadematy/features/home/data/models/service_item_model.dart';
 import 'package:khadematy/features/reviews/data/models/review_model.dart';
 import 'package:khadematy/features/reviews/presentation/controllers/reviews_controller.dart';
@@ -29,6 +30,18 @@ class MockReviewsRepository implements ReviewsRepository {
         comment: comment,
         createdAt: DateTime.now(),
       ),
+    );
+  }
+
+  @override
+  RealtimeSubscriptionToken subscribeToServiceReviews({
+    required String serviceId,
+    required void Function() onData,
+    void Function()? onResync,
+  }) {
+    return const RealtimeSubscriptionToken(
+      channelKey: 'test_reviews',
+      listenerId: 'test_5',
     );
   }
 }

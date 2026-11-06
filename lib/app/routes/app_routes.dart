@@ -71,6 +71,16 @@ class AppRoutes {
         return MaterialPageRoute(
             builder: (_) => const PackageCustomizationScreen());
       case bookingDate:
+        if (settings.arguments is Map<String, dynamic>) {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (_) => BookingDateScreen(
+              service: args['service'] as ServiceItemModel?,
+              initialSlot: args['initialSlot'] as String?,
+              initialNotes: args['initialNotes'] as String?,
+            ),
+          );
+        }
         final service = settings.arguments as ServiceItemModel?;
         return MaterialPageRoute(
             builder: (_) => BookingDateScreen(service: service));

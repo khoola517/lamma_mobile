@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../../../app/routes/app_routes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/empty_state_view.dart';
+import '../../../home/data/models/service_item_model.dart';
+import '../../../home/data/repositories/supabase_services_repository.dart';
+import '../../../home/presentation/controllers/home_controller.dart';
 import '../../../reviews/presentation/widgets/add_review_bottom_sheet.dart';
 import '../../data/models/booking_model.dart';
 import '../controllers/bookings_controller.dart';
@@ -212,89 +216,96 @@ class BookingsListScreen extends StatelessWidget {
           ),
           const Divider(height: 1, color: AppColors.borderLight),
 
-          // Main Service Info
-          Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: booking.imageUrl.trim().isNotEmpty
-                      ? Image.network(
-                          booking.imageUrl.trim(),
-                          width: 72,
-                          height: 72,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 72,
-                            height: 72,
-                            color: AppColors.surfaceSection,
-                            child: const Icon(Icons.celebration,
-                                color: AppColors.primarySoft),
-                          ),
-                        )
-                      : Container(
-                          width: 72,
-                          height: 72,
-                          color: AppColors.surfaceSection,
-                          child: const Icon(Icons.celebration,
-                              color: AppColors.primarySoft),
-                        ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        booking.title,
-                        style: GoogleFonts.cairo(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(Icons.calendar_today_rounded,
-                              size: 14, color: AppColors.primarySoft),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${booking.bookingDate.day} / ${booking.bookingDate.month} / ${booking.bookingDate.year}',
-                            style: GoogleFonts.cairo(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          const Icon(Icons.schedule_rounded,
-                              size: 14, color: AppColors.primarySoft),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              booking.timeSlot,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.cairo(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.textTertiary,
+          // Main Service Info (Tappable to view service details)
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _handleOpenServiceDetails(context, booking),
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: booking.imageUrl.trim().isNotEmpty
+                          ? Image.network(
+                              booking.imageUrl.trim(),
+                              width: 72,
+                              height: 72,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                width: 72,
+                                height: 72,
+                                color: AppColors.surfaceSection,
+                                child: const Icon(Icons.celebration,
+                                    color: AppColors.primarySoft),
                               ),
+                            )
+                          : Container(
+                              width: 72,
+                              height: 72,
+                              color: AppColors.surfaceSection,
+                              child: const Icon(Icons.celebration,
+                                  color: AppColors.primarySoft),
                             ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            booking.title,
+                            style: GoogleFonts.cairo(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.calendar_today_rounded,
+                                  size: 14, color: AppColors.primarySoft),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${booking.bookingDate.day} / ${booking.bookingDate.month} / ${booking.bookingDate.year}',
+                                style: GoogleFonts.cairo(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(Icons.schedule_rounded,
+                                  size: 14, color: AppColors.primarySoft),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  booking.timeSlot,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.cairo(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textTertiary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
 
@@ -348,8 +359,7 @@ class BookingsListScreen extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Review Service Button for Completed Bookings
-                    if (booking.status == BookingStatus.completed)
+                    if (booking.status == BookingStatus.completed) ...[
                       TextButton.icon(
                         onPressed: () {
                           final serviceId = booking.items.isNotEmpty
@@ -363,9 +373,9 @@ class BookingsListScreen extends StatelessWidget {
                           );
                         },
                         icon: const Icon(Icons.star_rounded,
-                            size: 16, color: AppColors.brandGold),
+                            size: 15, color: AppColors.brandGold),
                         label: Text(
-                          'تقييم الخدمة',
+                          'تقييم',
                           style: GoogleFonts.cairo(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -373,22 +383,47 @@ class BookingsListScreen extends StatelessWidget {
                           ),
                         ),
                         style: TextButton.styleFrom(
-                          backgroundColor: AppColors.primaryLight.withOpacity(0.5),
+                          backgroundColor:
+                              AppColors.primaryLight.withOpacity(0.5),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                              horizontal: 8, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                      )
-                    else if (booking.status == BookingStatus.pending)
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton.icon(
+                        onPressed: () => _handleRebook(context, booking),
+                        icon: const Icon(Icons.replay_rounded,
+                            size: 15, color: AppColors.primary),
+                        label: Text(
+                          'إعادة الحجز',
+                          style: GoogleFonts.cairo(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ] else if (booking.status == BookingStatus.pending)
                       TextButton(
-                        onPressed: () {
-                          controller.cancelBooking(booking.id);
-                        },
+                        onPressed: () =>
+                            _confirmCancelBooking(context, booking, controller),
                         style: TextButton.styleFrom(
                           foregroundColor: AppColors.error,
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         child: Text(
                           'إلغاء الحجز',
@@ -399,23 +434,173 @@ class BookingsListScreen extends StatelessWidget {
                         ),
                       )
                     else
-                      TextButton(
-                        onPressed: () {},
-                        style: TextButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                        ),
-                        child: Text(
+                      TextButton.icon(
+                        onPressed: () => _handleRebook(context, booking),
+                        icon: const Icon(Icons.replay_rounded,
+                            size: 15, color: AppColors.primary),
+                        label: Text(
                           'إعادة الحجز',
                           style: GoogleFonts.cairo(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
                           ),
+                        ),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       ),
                   ],
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<ServiceItemModel> _resolveServiceItem(
+      BuildContext context, BookingModel booking) async {
+    final serviceId =
+        booking.items.isNotEmpty ? booking.items.first.serviceId : null;
+
+    ServiceItemModel? targetService;
+
+    // 1. البحث في الخدمات المحملة بالذاكرة للاستجابة اللحظية
+    try {
+      final homeCtrl = context.read<HomeController>();
+      if (serviceId != null && serviceId.isNotEmpty) {
+        targetService = homeCtrl.allServices
+            .cast<ServiceItemModel?>()
+            .firstWhere((s) => s?.id == serviceId, orElse: () => null);
+      }
+
+      if (targetService == null && booking.title.isNotEmpty) {
+        targetService = homeCtrl.allServices
+            .cast<ServiceItemModel?>()
+            .firstWhere(
+              (s) =>
+                  s?.title.trim().toLowerCase() ==
+                  booking.title.trim().toLowerCase(),
+              orElse: () => null,
+            );
+      }
+    } catch (_) {}
+
+    // 2. محاولة الجلب من الخادم إذا لم تكن في الذاكرة
+    if (targetService == null && serviceId != null && serviceId.isNotEmpty) {
+      try {
+        targetService =
+            await SupabaseServicesRepository().getServiceById(serviceId);
+      } catch (_) {}
+    }
+
+    // 3. نموذج احتياطي متكامل من تفاصيل الحجز
+    targetService ??= ServiceItemModel(
+      id: (serviceId != null && serviceId.isNotEmpty)
+          ? serviceId
+          : booking.id,
+      title: booking.title,
+      category: booking.category,
+      location: booking.vendorName,
+      price: booking.price,
+      priceUnit: booking.priceUnit,
+      rating: 5.0,
+      imageUrl: booking.imageUrl,
+      description: booking.notes ?? '',
+    );
+
+    return targetService;
+  }
+
+  Future<void> _handleRebook(
+      BuildContext context, BookingModel booking) async {
+    final service = await _resolveServiceItem(context, booking);
+    if (!context.mounted) return;
+
+    Navigator.of(context).pushNamed(
+      AppRoutes.bookingDate,
+      arguments: {
+        'service': service,
+        'initialSlot': booking.timeSlot,
+        'initialNotes': booking.notes,
+      },
+    );
+  }
+
+  Future<void> _handleOpenServiceDetails(
+      BuildContext context, BookingModel booking) async {
+    final service = await _resolveServiceItem(context, booking);
+    if (!context.mounted) return;
+
+    Navigator.of(context).pushNamed(
+      AppRoutes.serviceDetails,
+      arguments: service,
+    );
+  }
+
+  void _confirmCancelBooking(BuildContext context, BookingModel booking,
+      BookingsController controller) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceCard,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          'إلغاء الحجز',
+          style: GoogleFonts.cairo(
+            fontWeight: FontWeight.w800,
+            fontSize: 17,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: Text(
+          'هل أنت متأكد من رغبتك في إلغاء طلب الحجز #${booking.bookingCode}؟',
+          style: GoogleFonts.cairo(
+            fontSize: 14,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'تراجع',
+              style: GoogleFonts.cairo(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              controller.cancelBooking(booking.id);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'تم إلغاء الحجز بنجاح',
+                    style: GoogleFonts.cairo(fontWeight: FontWeight.w600),
+                  ),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            },
+            child: Text(
+              'تأكيد الإلغاء',
+              style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
             ),
           ),
         ],

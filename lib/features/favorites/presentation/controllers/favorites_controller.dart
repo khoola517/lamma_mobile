@@ -8,7 +8,9 @@ import '../../../home/domain/repositories/services_repository.dart';
 class FavoritesController extends ChangeNotifier {
   final ServicesRepository _repository;
   List<ServiceItemModel> _favoriteServices = [];
+  final Set<String> _favoriteIds = {};
   bool _isLoading = false;
+  bool _isInitialized = false;
   String? _errorMessage;
   bool? _lastAuthStatus;
   final List<RealtimeSubscriptionToken> _realtimeTokens = [];
@@ -17,12 +19,21 @@ class FavoritesController extends ChangeNotifier {
       : _repository = repository ?? SupabaseServicesRepository();
 
   List<ServiceItemModel> get favoriteServices => _favoriteServices;
+  Set<String> get favoriteIds => _favoriteIds;
   bool get isLoading => _isLoading;
+  bool get isInitialized => _isInitialized;
   bool get isEmpty => _favoriteServices.isEmpty;
   String? get errorMessage => _errorMessage;
 
   bool isFavorite(String serviceId) {
-    return _favoriteServices.any((s) => s.id == serviceId);
+    return _favoriteIds.contains(serviceId);
+  }
+
+  void seedFavorites(Iterable<String> ids) {
+    if (!_isInitialized) {
+      _favoriteIds.addAll(ids);
+      notifyListeners();
+    }
   }
 
   void onAuthChanged(bool isAuthenticated) {
@@ -34,6 +45,8 @@ class FavoritesController extends ChangeNotifier {
       } else {
         _unsubscribeRealtime();
         _favoriteServices = [];
+        _favoriteIds.clear();
+        _isInitialized = false;
         _errorMessage = null;
         notifyListeners();
       }
@@ -42,21 +55,22 @@ class FavoritesController extends ChangeNotifier {
 
   void _subscribeToFavoritesRealtime() {
     _unsubscribeRealtime();
+    if (!SupabaseConfig.hasClient) return;
+
     final userId = SupabaseConfig.client.auth.currentUser?.id;
     if (userId == null) return;
 
     _realtimeTokens.add(
-      SupabaseRealtimeService.instance.subscribeTable(
-        table: 'favorites',
-        filter: 'user_id=eq.$userId',
-        onInserted: (_) => loadFavorites(),
-        onDeleted: (_) => loadFavorites(),
+      _repository.subscribeToFavorites(
+        userId: userId,
+        onData: () => loadFavorites(silent: true),
+        onResync: () => loadFavorites(silent: true),
       ),
     );
 
     _realtimeTokens.add(
       SupabaseRealtimeService.instance.onReconnected(() {
-        loadFavorites();
+        loadFavorites(silent: true);
       }),
     );
   }
@@ -68,13 +82,22 @@ class FavoritesController extends ChangeNotifier {
     _realtimeTokens.clear();
   }
 
-  Future<void> loadFavorites() async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<void> loadFavorites({bool silent = false}) async {
+    if (!silent) {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+    }
 
     try {
-      _favoriteServices = await _repository.getFavoriteServices();
+      final items = await _repository.getFavoriteServices();
+      _favoriteServices = items;
+      _favoriteIds.clear();
+      for (final item in items) {
+        _favoriteIds.add(item.id);
+      }
+      _isInitialized = true;
+      _errorMessage = null;
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
     } finally {
@@ -85,17 +108,24 @@ class FavoritesController extends ChangeNotifier {
 
   Future<void> removeFavorite(String serviceId) async {
     final index = _favoriteServices.indexWhere((s) => s.id == serviceId);
-    if (index == -1) return;
+    final removedItem = index != -1 ? _favoriteServices[index] : null;
 
-    final removedItem = _favoriteServices[index];
-    _favoriteServices.removeAt(index);
+    // 1. التحديث الفوري محلياً (Optimistic UI)
+    if (index != -1) {
+      _favoriteServices.removeAt(index);
+    }
+    _favoriteIds.remove(serviceId);
     notifyListeners();
 
     try {
-      await _repository.toggleFavorite(serviceId);
+      // 2. الحذف الصريح من السحابة بدون الوقوع في خطأ الـ Toggle
+      await _repository.removeFavorite(serviceId);
     } catch (e) {
-      // Revert if API call fails
-      _favoriteServices.insert(index, removedItem);
+      // التراجع عند الفشل
+      if (removedItem != null && index != -1) {
+        _favoriteServices.insert(index, removedItem);
+      }
+      _favoriteIds.add(serviceId);
       notifyListeners();
       rethrow;
     }
@@ -105,26 +135,52 @@ class FavoritesController extends ChangeNotifier {
     final wasFav = isFavorite(service.id);
     final index = _favoriteServices.indexWhere((s) => s.id == service.id);
 
+    // 1. التحديث الفوري محلياً (Optimistic UI)
     if (wasFav) {
+      _favoriteIds.remove(service.id);
       _favoriteServices.removeWhere((s) => s.id == service.id);
     } else {
+      _favoriteIds.add(service.id);
       _favoriteServices.insert(0, service.copyWith(isFavorite: true));
     }
     notifyListeners();
 
     try {
-      await _repository.toggleFavorite(service.id);
+      // 2. استدعاء السحابة المناسب بناءً على الحالة
+      if (wasFav) {
+        await _repository.removeFavorite(service.id);
+      } else {
+        await _repository.addFavorite(service.id);
+      }
       return !wasFav;
     } catch (e) {
-      // Revert
-      if (wasFav && index != -1) {
-        _favoriteServices.insert(index, service.copyWith(isFavorite: true));
+      // التراجع عند الفشل
+      if (wasFav) {
+        _favoriteIds.add(service.id);
+        if (index != -1) {
+          _favoriteServices.insert(index, service.copyWith(isFavorite: true));
+        }
       } else {
+        _favoriteIds.remove(service.id);
         _favoriteServices.removeWhere((s) => s.id == service.id);
       }
       notifyListeners();
       rethrow;
     }
+  }
+
+  void addFavoriteLocally(ServiceItemModel service) {
+    _favoriteIds.add(service.id);
+    if (!_favoriteServices.any((s) => s.id == service.id)) {
+      _favoriteServices.insert(0, service.copyWith(isFavorite: true));
+    }
+    notifyListeners();
+  }
+
+  void removeFavoriteLocally(String serviceId) {
+    _favoriteIds.remove(serviceId);
+    _favoriteServices.removeWhere((s) => s.id == serviceId);
+    notifyListeners();
   }
 
   @override

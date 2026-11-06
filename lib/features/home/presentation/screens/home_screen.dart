@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
       arguments: service,
     ).then((_) {
       if (mounted) {
-        context.read<FavoritesController>().loadFavorites();
+        context.read<FavoritesController>().loadFavorites(silent: true);
       }
     });
   }
@@ -69,9 +69,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      await context.read<HomeController>().toggleFavorite(serviceId);
-      if (mounted) {
-        context.read<FavoritesController>().loadFavorites();
+      final homeController = context.read<HomeController>();
+      final favoritesController = context.read<FavoritesController>();
+
+      final isNowFav = await homeController.toggleFavorite(serviceId);
+      if (isNowFav) {
+        final service = homeController.allServices.firstWhere(
+          (s) => s.id == serviceId,
+        );
+        favoritesController.addFavoriteLocally(service);
+      } else {
+        favoritesController.removeFavoriteLocally(serviceId);
       }
     } catch (e) {
       if (mounted) {
@@ -98,6 +106,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final homeController = context.watch<HomeController>();
     final notifController = context.watch<NotificationsController>();
+    FavoritesController? favCtrl;
+    try {
+      favCtrl = context.watch<FavoritesController>();
+    } catch (_) {}
+
+    if (favCtrl != null && !favCtrl.isInitialized && homeController.allServices.isNotEmpty) {
+      favCtrl.seedFavorites(
+        homeController.allServices.where((s) => s.isFavorite).map((s) => s.id),
+      );
+    }
 
     if (homeController.status == HomeStatus.loading &&
         homeController.allServices.isEmpty) {
@@ -725,9 +743,9 @@ class _HomeScreenState extends State<HomeScreen> {
               final service = services[index];
               FavoritesController? favCtrl;
               try {
-                favCtrl = Provider.of<FavoritesController>(context);
+                favCtrl = context.watch<FavoritesController>();
               } catch (_) {}
-              final isFav = (favCtrl != null && !(favCtrl.isLoading && favCtrl.isEmpty))
+              final isFav = (favCtrl != null && favCtrl.isInitialized)
                   ? favCtrl.isFavorite(service.id)
                   : service.isFavorite;
               return ServiceCard(

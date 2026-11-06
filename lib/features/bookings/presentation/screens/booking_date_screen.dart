@@ -14,8 +14,15 @@ import '../controllers/bookings_controller.dart';
 
 class BookingDateScreen extends StatefulWidget {
   final ServiceItemModel? service;
+  final String? initialSlot;
+  final String? initialNotes;
 
-  const BookingDateScreen({super.key, this.service});
+  const BookingDateScreen({
+    super.key,
+    this.service,
+    this.initialSlot,
+    this.initialNotes,
+  });
 
   @override
   State<BookingDateScreen> createState() => _BookingDateScreenState();
@@ -23,8 +30,8 @@ class BookingDateScreen extends StatefulWidget {
 
 class _BookingDateScreenState extends State<BookingDateScreen> {
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 7));
-  String _selectedSlot = 'الفترة المسائية (4:00 م - 11:00 م)';
-  final TextEditingController _notesController = TextEditingController();
+  late String _selectedSlot;
+  late final TextEditingController _notesController;
   bool _isSubmitting = false;
 
   final List<String> _slots = [
@@ -32,6 +39,25 @@ class _BookingDateScreenState extends State<BookingDateScreen> {
     'الفترة الصباحية (9:00 ص - 2:00 م)',
     'يوم كامل',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialSlot != null) {
+      final slotMatch = _slots.cast<String?>().firstWhere(
+            (s) =>
+                s != null &&
+                (s == widget.initialSlot ||
+                    widget.initialSlot!.contains(s) ||
+                    s.contains(widget.initialSlot!)),
+            orElse: () => null,
+          );
+      _selectedSlot = slotMatch ?? _slots.first;
+    } else {
+      _selectedSlot = _slots.first;
+    }
+    _notesController = TextEditingController(text: widget.initialNotes ?? '');
+  }
 
   @override
   void dispose() {
