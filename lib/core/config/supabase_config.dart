@@ -41,6 +41,16 @@ class SupabaseConfig {
   /// العميل البرمجي لـ Supabase
   static SupabaseClient get client => Supabase.instance.client;
 
+  /// فحص ما إذا كان العميل مهيأ ومتاحاً
+  static bool get hasClient {
+    try {
+      Supabase.instance.client;
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// تهيئة عميل Supabase بأمان عند بدء التطبيق
   static Future<void> initialize() async {
     try {

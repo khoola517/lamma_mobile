@@ -1,5 +1,6 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../../core/config/supabase_config.dart';
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../../data/repositories/supabase_notifications_repository.dart';
 import '../../domain/repositories/notifications_repository.dart';
 
@@ -36,7 +37,7 @@ class NotificationsController extends ChangeNotifier {
   final NotificationsRepository _repository;
   bool _isLoading = false;
   bool _lastAuthStatus = false;
-  StreamSubscription<List<NotificationItem>>? _streamSubscription;
+  final List<RealtimeSubscriptionToken> _realtimeTokens = [];
 
   // تم حذف البيانات الوهمية (Mock Data) والاعتماد حصراً على بيانات Supabase الحية
   List<NotificationItem> _notifications = [];
@@ -65,19 +66,32 @@ class NotificationsController extends ChangeNotifier {
 
   /// الاشتراك في تدفق البث اللحظي (Supabase Realtime)
   void _subscribeToRealtime() {
-    _streamSubscription?.cancel();
-    _streamSubscription = _repository.getNotificationsStream().listen(
-      (remoteNotifications) {
-        _notifications = remoteNotifications;
-        notifyListeners();
-      },
-      onError: (_) {},
+    _unsubscribeFromRealtime();
+    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    _realtimeTokens.add(
+      SupabaseRealtimeService.instance.subscribeTable(
+        table: 'notifications',
+        filter: 'user_id=eq.$userId',
+        onInserted: (_) => loadNotifications(),
+        onUpdated: (_) => loadNotifications(),
+        onDeleted: (_) => loadNotifications(),
+      ),
+    );
+
+    _realtimeTokens.add(
+      SupabaseRealtimeService.instance.onReconnected(() {
+        loadNotifications();
+      }),
     );
   }
 
   void _unsubscribeFromRealtime() {
-    _streamSubscription?.cancel();
-    _streamSubscription = null;
+    for (final token in _realtimeTokens) {
+      token.cancel();
+    }
+    _realtimeTokens.clear();
   }
 
   /// جلب الإشعارات الفعلية من Supabase

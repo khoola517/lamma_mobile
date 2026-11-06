@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../../core/config/supabase_config.dart';
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../../data/models/booking_model.dart';
 import '../../data/repositories/supabase_bookings_repository.dart';
 import '../../domain/repositories/bookings_repository.dart';
@@ -9,12 +11,14 @@ class BookingsController extends ChangeNotifier {
   String? _errorMessage;
   int _selectedTabIndex = 0; // 0: الكل, 1: قيد الانتظار, 2: المكتملة
   bool? _lastAuthStatus;
+  final List<RealtimeSubscriptionToken> _realtimeTokens = [];
 
   List<BookingModel> _bookings = [];
 
   BookingsController({BookingsRepository? repository})
       : _repository = repository ?? SupabaseBookingsRepository() {
     loadBookings();
+    _subscribeToBookingsRealtime();
   }
 
   bool get isLoading => _isLoading;
@@ -50,13 +54,62 @@ class BookingsController extends ChangeNotifier {
     if (_lastAuthStatus != isAuthenticated) {
       _lastAuthStatus = isAuthenticated;
       if (isAuthenticated) {
+        _subscribeToBookingsRealtime();
         loadBookings();
       } else {
+        _unsubscribeRealtime();
         _bookings = [];
         _errorMessage = null;
         notifyListeners();
       }
     }
+  }
+
+  void _subscribeToBookingsRealtime() {
+    _unsubscribeRealtime();
+    final userId = SupabaseConfig.client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    // 1. مزامنة حجوزات العميل عند تحديث حالتها من مقدم الخدمة أو الأدمن
+    _realtimeTokens.add(
+      SupabaseRealtimeService.instance.subscribeTable(
+        table: 'bookings',
+        filter: 'customer_id=eq.$userId',
+        onInserted: (_) => loadBookings(),
+        onUpdated: (_) => loadBookings(),
+        onDeleted: (_) => loadBookings(),
+      ),
+    );
+
+    // 2. مزامنة تفاصيل الخدمات في الحجز
+    _realtimeTokens.add(
+      SupabaseRealtimeService.instance.subscribeTable(
+        table: 'booking_items',
+        onInserted: (_) => loadBookings(),
+        onUpdated: (_) => loadBookings(),
+        onDeleted: (_) => loadBookings(),
+      ),
+    );
+
+    // 3. إعادة المزامنة عند عودة الاتصال
+    _realtimeTokens.add(
+      SupabaseRealtimeService.instance.onReconnected(() {
+        loadBookings();
+      }),
+    );
+  }
+
+  void _unsubscribeRealtime() {
+    for (final token in _realtimeTokens) {
+      token.cancel();
+    }
+    _realtimeTokens.clear();
+  }
+
+  @override
+  void dispose() {
+    _unsubscribeRealtime();
+    super.dispose();
   }
 
   Future<void> loadBookings() async {

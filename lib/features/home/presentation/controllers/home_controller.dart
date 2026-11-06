@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/supabase_realtime_service.dart';
 import '../../data/models/category_model.dart';
 import '../../data/models/service_item_model.dart';
 import '../../data/repositories/supabase_services_repository.dart';
@@ -8,9 +9,61 @@ enum HomeStatus { initial, loading, success, error }
 
 class HomeController extends ChangeNotifier {
   final ServicesRepository _repository;
+  final List<RealtimeSubscriptionToken> _realtimeTokens = [];
 
   HomeController({ServicesRepository? repository})
-      : _repository = repository ?? SupabaseServicesRepository();
+      : _repository = repository ?? SupabaseServicesRepository() {
+    _initRealtime();
+  }
+
+  void _initRealtime() {
+    // 1. الاستماع لتحديثات التصنيفات لحظياً في تطبيق العميل
+    _realtimeTokens.add(
+      SupabaseRealtimeService.instance.subscribeTable(
+        table: 'categories',
+        onInserted: (_) => _reloadCategories(),
+        onUpdated: (_) => _reloadCategories(),
+        onDeleted: (_) => _reloadCategories(),
+      ),
+    );
+
+    // 2. الاستماع لتحديثات الخدمات لحظياً (إضافة، تعديل، إيقاف، حذف)
+    _realtimeTokens.add(
+      SupabaseRealtimeService.instance.subscribeTable(
+        table: 'services',
+        onInserted: (_) => _reloadServices(),
+        onUpdated: (_) => _reloadServices(),
+        onDeleted: (_) => _reloadServices(),
+      ),
+    );
+
+    // 3. إعادة المزامنة عند استعادة الاتصال
+    _realtimeTokens.add(
+      SupabaseRealtimeService.instance.onReconnected(() {
+        loadHomeData();
+      }),
+    );
+  }
+
+  Future<void> _reloadCategories() async {
+    try {
+      final updated = await _repository.getCategories();
+      _categories = updated;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Realtime reload categories error: $e');
+    }
+  }
+
+  Future<void> _reloadServices() async {
+    try {
+      final updated = await _repository.getAllServices();
+      _allServices = updated;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Realtime reload services error: $e');
+    }
+  }
 
   HomeStatus _status = HomeStatus.initial;
   List<CategoryModel> _categories = [];
@@ -127,5 +180,14 @@ class HomeController extends ChangeNotifier {
 
   Future<List<ServiceItemModel>> getServicesByCategoryId(String categoryId) async {
     return _repository.getServicesByCategoryId(categoryId);
+  }
+
+  @override
+  void dispose() {
+    for (final token in _realtimeTokens) {
+      token.cancel();
+    }
+    _realtimeTokens.clear();
+    super.dispose();
   }
 }

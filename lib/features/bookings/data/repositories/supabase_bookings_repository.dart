@@ -143,6 +143,9 @@ class SupabaseBookingsRepository implements BookingsRepository {
       final bookingCode = data['booking_code'] as String;
       final totalAmount = (data['total_amount'] as num?) ?? budget ?? 0;
 
+      // إشعار مقدم الخدمة لحظياً بالطلب الجديد
+      _notifyProviderOnNewBooking(bookingId, bookingCode, validServiceIds);
+
       return BookingModel(
         id: bookingId,
         bookingCode: bookingCode,
@@ -209,6 +212,9 @@ class SupabaseBookingsRepository implements BookingsRepository {
           await _client.from('booking_items').insert(itemsToInsert);
         }
 
+        // إشعار مقدم الخدمة لحظياً بالطلب الجديد
+        _notifyProviderOnNewBooking(bookingId, bookingCode, validServiceIds);
+
         return BookingModel(
           id: bookingId,
           bookingCode: bookingCode,
@@ -250,5 +256,37 @@ class SupabaseBookingsRepository implements BookingsRepository {
         .from('bookings')
         .update({'status': 'cancelled'})
         .eq('id', bookingId);
+  }
+
+  Future<void> _notifyProviderOnNewBooking(
+    String bookingId,
+    String bookingCode,
+    List<String> serviceIds,
+  ) async {
+    try {
+      if (serviceIds.isEmpty) return;
+      final services = await _client
+          .from('services')
+          .select('provider_id, provider_profiles(user_id)')
+          .inFilter('id', serviceIds);
+      final Set<String> targetUserIds = {};
+      for (final s in services as List) {
+        final prov = s['provider_profiles'] as Map<String, dynamic>?;
+        final uid = prov?['user_id']?.toString();
+        if (uid != null && uid.isNotEmpty) {
+          targetUserIds.add(uid);
+        }
+      }
+      for (final uid in targetUserIds) {
+        await _client.from('notifications').insert({
+          'user_id': uid,
+          'title': 'طلب حجز جديد',
+          'body': 'لديك طلب حجز جديد برقم #$bookingCode في انتظار الموافقة',
+          'type': 'booking_request',
+          'related_booking_id': bookingId,
+          'created_at': DateTime.now().toIso8601String(),
+        });
+      }
+    } catch (_) {}
   }
 }

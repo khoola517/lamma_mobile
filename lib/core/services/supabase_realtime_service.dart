@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
@@ -17,6 +16,11 @@ class RealtimeSubscriptionToken {
     required this.channelKey,
     required this.listenerId,
   });
+
+  /// Cancels this subscription safely.
+  void cancel() {
+    SupabaseRealtimeService.instance.cancelSubscription(this);
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -55,7 +59,7 @@ class _ManagedChannel {
   });
 }
 
-/// Centralized, production-grade Supabase Realtime Service for Lamma Customer App.
+/// Centralized, production-grade Supabase Realtime Service for Lamma.
 /// Features:
 /// - Single WebSocket channel per topic (prevents duplicate connections)
 /// - Multi-listener dispatching per channel
@@ -67,20 +71,80 @@ class SupabaseRealtimeService {
       SupabaseRealtimeService._internal();
 
   factory SupabaseRealtimeService() => _instance;
+  static SupabaseRealtimeService get instance => _instance;
 
   SupabaseRealtimeService._internal();
 
   SupabaseClient get _client => SupabaseConfig.client;
 
   final Map<String, _ManagedChannel> _channels = {};
+  final Map<String, void Function()> _reconnectListeners = {};
   int _listenerCounter = 0;
 
   /// Check whether Supabase client is initialized
-  bool get isReady => SupabaseConfig.isConfigured;
+  bool get isReady => SupabaseConfig.hasClient;
 
   // ========================================================
   // Generic Subscription Engine
   // ========================================================
+
+  /// Register a callback to be called whenever any channel reconnects after drop
+  RealtimeSubscriptionToken onReconnected(void Function() callback) {
+    final listenerId = 'rec_${++_listenerCounter}';
+    _reconnectListeners[listenerId] = callback;
+    return RealtimeSubscriptionToken(
+      channelKey: 'system_reconnect',
+      listenerId: listenerId,
+    );
+  }
+
+  /// Convenience wrapper supporting onInserted, onUpdated, onDeleted and string filters (e.g. "user_id=eq.123")
+  RealtimeSubscriptionToken subscribeTable({
+    required String table,
+    String schema = 'public',
+    String? filter,
+    void Function(Map<String, dynamic> record)? onInserted,
+    void Function(Map<String, dynamic> record)? onUpdated,
+    void Function(Map<String, dynamic> record)? onDeleted,
+    RealtimeResyncCallback? onResync,
+  }) {
+    PostgresChangeFilter? parsedFilter;
+    if (filter != null && filter.contains('=')) {
+      final parts = filter.split('=');
+      final column = parts[0].trim();
+      final opAndVal = parts[1].trim();
+      if (opAndVal.startsWith('eq.')) {
+        parsedFilter = PostgresChangeFilter(
+          type: PostgresChangeFilterType.eq,
+          column: column,
+          value: opAndVal.substring(3),
+        );
+      } else if (opAndVal.startsWith('neq.')) {
+        parsedFilter = PostgresChangeFilter(
+          type: PostgresChangeFilterType.neq,
+          column: column,
+          value: opAndVal.substring(4),
+        );
+      }
+    }
+
+    return subscribeToTable(
+      table: table,
+      schema: schema,
+      filter: parsedFilter,
+      onData: (payload) {
+        final eventType = payload.eventType;
+        if (eventType == PostgresChangeEvent.insert) {
+          onInserted?.call(payload.newRecord);
+        } else if (eventType == PostgresChangeEvent.update) {
+          onUpdated?.call(payload.newRecord);
+        } else if (eventType == PostgresChangeEvent.delete) {
+          onDeleted?.call(payload.oldRecord);
+        }
+      },
+      onResync: onResync,
+    );
+  }
 
   /// Subscribes to a Postgres table with an optional Postgres filter.
   /// Deduplicates channels: multiple callers with the same table/filter share
@@ -94,9 +158,9 @@ class SupabaseRealtimeService {
     RealtimeResyncCallback? onResync,
   }) {
     if (!isReady) {
-      debugPrint('SupabaseRealtimeService: Client not configured, skipping subscription for $table');
+      debugPrint('SupabaseRealtimeService: Client not ready, skipping subscription for $table');
       return RealtimeSubscriptionToken(
-        channelKey: 'unconfigured_$table',
+        channelKey: 'uninitialized_$table',
         listenerId: 'none',
       );
     }
@@ -158,6 +222,14 @@ class SupabaseRealtimeService {
                 debugPrint('Error in Realtime resync for $channelKey: $e');
               }
             }
+            // Trigger global reconnect listeners
+            for (final cb in _reconnectListeners.values) {
+              try {
+                cb();
+              } catch (e) {
+                debugPrint('Error in global reconnect callback: $e');
+              }
+            }
           }
         } else if (status == RealtimeSubscribeStatus.timedOut ||
             status == RealtimeSubscribeStatus.channelError) {
@@ -187,6 +259,11 @@ class SupabaseRealtimeService {
   /// and removed to avoid memory leaks and unneeded WebSocket traffic.
   void cancelSubscription(RealtimeSubscriptionToken? token) {
     if (token == null) return;
+    if (token.channelKey == 'system_reconnect') {
+      _reconnectListeners.remove(token.listenerId);
+      return;
+    }
+
     final managed = _channels[token.channelKey];
     if (managed == null) return;
 
@@ -224,6 +301,7 @@ class SupabaseRealtimeService {
       _teardownChannel(managed);
     }
     _channels.clear();
+    _reconnectListeners.clear();
     debugPrint('SupabaseRealtime: Disposed all channels');
   }
 
@@ -232,6 +310,7 @@ class SupabaseRealtimeService {
   // ========================================================
 
   /// 1. Categories Realtime
+  /// Listens for additions, updates, and deletions of categories.
   RealtimeSubscriptionToken subscribeToCategories({
     required RealtimeChangeCallback onData,
     RealtimeResyncCallback? onResync,
@@ -244,17 +323,19 @@ class SupabaseRealtimeService {
   }
 
   /// 2. Services Realtime
+  /// Listens for additions, updates (price, active/paused), and deletions.
+  /// If providerId is given, only filters events for that provider.
   RealtimeSubscriptionToken subscribeToServices({
-    String? categoryId,
+    String? providerId,
     required RealtimeChangeCallback onData,
     RealtimeResyncCallback? onResync,
   }) {
     PostgresChangeFilter? filter;
-    if (categoryId != null && categoryId.isNotEmpty) {
+    if (providerId != null && providerId.isNotEmpty) {
       filter = PostgresChangeFilter(
         type: PostgresChangeFilterType.eq,
-        column: 'category_id',
-        value: categoryId,
+        column: 'provider_id',
+        value: providerId,
       );
     }
 
@@ -266,25 +347,33 @@ class SupabaseRealtimeService {
     );
   }
 
-  /// 3. Customer Bookings Realtime
-  RealtimeSubscriptionToken subscribeToMyBookings({
-    required String customerId,
+  /// 3. Bookings Realtime
+  /// Listens for new bookings, status changes, cancellations, and completions.
+  /// If customerId is given, filters by customer_id.
+  RealtimeSubscriptionToken subscribeToBookings({
+    String? customerId,
     required RealtimeChangeCallback onData,
     RealtimeResyncCallback? onResync,
   }) {
-    return subscribeToTable(
-      table: 'bookings',
-      filter: PostgresChangeFilter(
+    PostgresChangeFilter? filter;
+    if (customerId != null && customerId.isNotEmpty) {
+      filter = PostgresChangeFilter(
         type: PostgresChangeFilterType.eq,
         column: 'customer_id',
         value: customerId,
-      ),
+      );
+    }
+
+    return subscribeToTable(
+      table: 'bookings',
+      filter: filter,
       onData: onData,
       onResync: onResync,
     );
   }
 
   /// 4. Booking Items Realtime
+  /// Listens for individual service acceptance / rejection in bookings.
   RealtimeSubscriptionToken subscribeToBookingItems({
     required RealtimeChangeCallback onData,
     RealtimeResyncCallback? onResync,
@@ -296,7 +385,8 @@ class SupabaseRealtimeService {
     );
   }
 
-  /// 5. Customer Notifications Realtime
+  /// 5. Notifications Realtime
+  /// Listens for newly inserted notifications and read-state updates for a specific user.
   RealtimeSubscriptionToken subscribeToNotifications({
     required String userId,
     required RealtimeChangeCallback onData,
@@ -314,7 +404,8 @@ class SupabaseRealtimeService {
     );
   }
 
-  /// 6. Customer Favorites Realtime
+  /// 6. Favorites Realtime
+  /// Listens for additions and removals of favorites for a specific user.
   RealtimeSubscriptionToken subscribeToFavorites({
     required String userId,
     required RealtimeChangeCallback onData,
@@ -332,7 +423,56 @@ class SupabaseRealtimeService {
     );
   }
 
-  /// 7. Reviews Realtime
+  /// 7. Provider Profiles Realtime
+  /// Listens for provider status changes (pending -> approved -> rejected).
+  RealtimeSubscriptionToken subscribeToProviderProfiles({
+    String? userId,
+    required RealtimeChangeCallback onData,
+    RealtimeResyncCallback? onResync,
+  }) {
+    PostgresChangeFilter? filter;
+    if (userId != null && userId.isNotEmpty) {
+      filter = PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'user_id',
+        value: userId,
+      );
+    }
+
+    return subscribeToTable(
+      table: 'provider_profiles',
+      filter: filter,
+      onData: onData,
+      onResync: onResync,
+    );
+  }
+
+  /// 8. Provider Applications Realtime
+  /// Listens for newly submitted applications or status reviews.
+  RealtimeSubscriptionToken subscribeToProviderApplications({
+    String? userId,
+    required RealtimeChangeCallback onData,
+    RealtimeResyncCallback? onResync,
+  }) {
+    PostgresChangeFilter? filter;
+    if (userId != null && userId.isNotEmpty) {
+      filter = PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'user_id',
+        value: userId,
+      );
+    }
+
+    return subscribeToTable(
+      table: 'provider_applications',
+      filter: filter,
+      onData: onData,
+      onResync: onResync,
+    );
+  }
+
+  /// 9. Reviews Realtime
+  /// Listens for new reviews and ratings updates.
   RealtimeSubscriptionToken subscribeToReviews({
     String? serviceId,
     required RealtimeChangeCallback onData,
@@ -349,6 +489,41 @@ class SupabaseRealtimeService {
 
     return subscribeToTable(
       table: 'reviews',
+      filter: filter,
+      onData: onData,
+      onResync: onResync,
+    );
+  }
+
+  /// 10. Complaints Realtime
+  RealtimeSubscriptionToken subscribeToComplaints({
+    required RealtimeChangeCallback onData,
+    RealtimeResyncCallback? onResync,
+  }) {
+    return subscribeToTable(
+      table: 'complaints',
+      onData: onData,
+      onResync: onResync,
+    );
+  }
+
+  /// 11. User Profiles Realtime
+  RealtimeSubscriptionToken subscribeToProfiles({
+    String? userId,
+    required RealtimeChangeCallback onData,
+    RealtimeResyncCallback? onResync,
+  }) {
+    PostgresChangeFilter? filter;
+    if (userId != null && userId.isNotEmpty) {
+      filter = PostgresChangeFilter(
+        type: PostgresChangeFilterType.eq,
+        column: 'id',
+        value: userId,
+      );
+    }
+
+    return subscribeToTable(
+      table: 'profiles',
       filter: filter,
       onData: onData,
       onResync: onResync,

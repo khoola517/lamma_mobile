@@ -92,3 +92,4 @@ ALTER TABLE IF EXISTS public.profiles ENABLE ROW LEVEL SECURITY;
 -- 5. Documentation Comment
 COMMENT ON PUBLICATION supabase_realtime IS 
   'Central publication for Lamma Realtime synchronization across Customer, Provider, and Admin platforms.';
+

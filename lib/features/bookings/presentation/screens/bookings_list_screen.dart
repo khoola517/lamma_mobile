@@ -5,7 +5,6 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/empty_state_view.dart';
-import '../../../../app/routes/app_routes.dart';
 import '../../../reviews/presentation/widgets/add_review_bottom_sheet.dart';
 import '../../data/models/booking_model.dart';
 import '../controllers/bookings_controller.dart';

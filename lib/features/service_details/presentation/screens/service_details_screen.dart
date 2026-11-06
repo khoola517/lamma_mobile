@@ -57,12 +57,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     final hasLocation = currentItem.location.trim().isNotEmpty;
     final locationDisplay = hasLocation ? currentItem.location.trim() : 'غير محدد';
 
-    // العنوان الفعلي من مزود الخدمة عبر Supabase
-    final hasAddress = (currentItem.address != null && currentItem.address!.trim().isNotEmpty) || hasLocation;
-    final addressDisplay = (currentItem.address != null && currentItem.address!.trim().isNotEmpty)
-        ? currentItem.address!.trim()
-        : locationDisplay;
-
     // السعر الفعلي من Supabase
     final priceDisplay = currentItem.price > 0 ? currentItem.formattedPrice : 'حسب الطلب';
 
