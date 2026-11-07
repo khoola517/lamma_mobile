@@ -152,24 +152,24 @@ class _ReviewsSectionWidgetState extends State<ReviewsSectionWidget> {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surfaceCard,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFECEEF2)),
+              border: Border.all(color: AppColors.borderLight),
             ),
             child: Center(
               child: Column(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.rate_review_outlined,
                     size: 32,
-                    color: Color(0xFF9CA3AF),
+                    color: AppColors.textTertiary,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'لا توجد تعليقات بعد في قاعدة البيانات.',
                     style: GoogleFonts.cairo(
                       fontSize: 13,
-                      color: const Color(0xFF6B7280),
+                      color: AppColors.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

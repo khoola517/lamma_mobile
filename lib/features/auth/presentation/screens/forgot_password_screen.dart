@@ -66,10 +66,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           AppStrings.resetPasswordTitle,
           style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_forward_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        // leading: IconButton(
+        //   icon: const Icon(Icons.arrow_forward_rounded),
+        //   onPressed: () => Navigator.of(context).pop(),
+        // ),
       ),
       body: SafeArea(
         child: ResponsiveContainer(
@@ -135,7 +135,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           keyboardType: TextInputType.emailAddress,
                           textInputAction: TextInputAction.done,
                           onFieldSubmitted: (_) => _handleResetPassword(),
-                          prefixIcon: const Icon(
+                          suffixIcon: Icon(
                             Icons.mail_outline_rounded,
                             color: AppColors.textTertiary,
                             size: 20,
@@ -155,7 +155,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         // Submit Button
                         CustomButton(
                           text: AppStrings.sendResetLink,
-                          icon: Icons.send_rounded,
+                          //icon: Icons.send_rounded,
                           isLoading: isLoading,
                           onPressed: _handleResetPassword,
                         ),

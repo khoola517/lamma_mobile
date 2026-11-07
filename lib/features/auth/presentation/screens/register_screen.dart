@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../../app/routes/app_routes.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/responsive.dart';
@@ -194,10 +195,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: AppColors.surfaceWarm,
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_forward_rounded),
-          onPressed: isLoading ? null : () => Navigator.of(context).pop(),
-        ),
+        // leading: IconButton(
+        //   //icon: const Icon(Icons.arrow_forward_rounded),
+        //   onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+        // ),
         title: Text(
           AppStrings.registerTitle,
           style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
@@ -212,8 +213,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const SizedBox(height: 8),
+                  // الشعار أول شيء في الصفحة
+                  Center(
+                    child: Container(
+                      width: 76,
+                      height: 76,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.asset(
+                        AppAssets.appLogo,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: AppColors.primaryVeryLight,
+                          child: const Icon(
+                            Icons.celebration_rounded,
+                            color: AppColors.primary,
+                            size: 34,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
                   Text(
                     AppStrings.registerSubtitle,
+                    textAlign: TextAlign.center,
                     style: GoogleFonts.cairo(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
@@ -226,10 +261,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // Full Name (مطلوب)
                   CustomTextField(
                     label: AppStrings.fullName,
-                    hintText: 'مثال: ريم أحمد العامري',
+                    hintText: 'مثال: ريم أحمد ',
                     controller: _nameController,
                     textInputAction: TextInputAction.next,
-                    prefixIcon: const Icon(
+                    suffixIcon: Icon(
                       Icons.person_outline_rounded,
                       color: AppColors.textTertiary,
                       size: 20,
@@ -253,7 +288,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    prefixIcon: const Icon(
+                    suffixIcon: Icon(
                       Icons.mail_outline_rounded,
                       color: AppColors.textTertiary,
                       size: 20,
@@ -277,7 +312,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
                     textInputAction: TextInputAction.next,
-                    prefixIcon: const Icon(
+                    suffixIcon: Icon(
                       Icons.phone_outlined,
                       color: AppColors.textTertiary,
                       size: 20,
@@ -292,11 +327,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     controller: _passwordController,
                     isPassword: true,
                     textInputAction: TextInputAction.next,
-                    prefixIcon: const Icon(
-                      Icons.lock_outline_rounded,
-                      color: AppColors.textTertiary,
-                      size: 20,
-                    ),
+                    // prefixIcon: const Icon(
+                    //   Icons.lock_outline_rounded,
+                    //   color: AppColors.textTertiary,
+                    //   size: 20,
+                    // ),
                     validator: (val) {
                       if (val == null || val.isEmpty) {
                         return 'يرجى إدخال كلمة المرور';
@@ -317,11 +352,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     isPassword: true,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _handleRegister(),
-                    prefixIcon: const Icon(
-                      Icons.lock_clock_outlined,
-                      color: AppColors.textTertiary,
-                      size: 20,
-                    ),
+                    // prefixIcon: const Icon(
+                    //   Icons.lock_clock_outlined,
+                    //   color: AppColors.textTertiary,
+                    //   size: 20,
+                    // ),
                     validator: (val) {
                       if (val == null || val.isEmpty) {
                         return 'يرجى تأكيد كلمة المرور';
@@ -342,6 +377,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         height: 24,
                         child: Checkbox(
                           value: _agreedToTerms,
+                          checkColor: Colors.white,
                           activeColor: AppColors.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(5),
@@ -373,7 +409,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // Submit Button
                   CustomButton(
                     text: AppStrings.createAccount,
-                    icon: Icons.person_add_alt_1_rounded,
+                    //icon: Icons.person_add_alt_1_rounded,
                     isLoading: isLoading,
                     onPressed: isLoading ? null : _handleRegister,
                   ),

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "779197985848",
+    "project_id": "lama-a8920",
+    "storage_bucket": "lama-a8920.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:779197985848:android:f173f5674988a4d9f1e2cd",
+        "android_client_info": {
+          "package_name": "com.example.khadematy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDwOrNV6_H0W2j7PMMcQxfBfKdpjHR0So"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

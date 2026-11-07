@@ -22,6 +22,7 @@ import '../../features/reviews/presentation/controllers/reviews_controller.dart'
 import '../../features/support/domain/repositories/support_repository.dart';
 import '../../features/support/data/repositories/supabase_support_repository.dart';
 import '../../features/support/presentation/controllers/support_controller.dart';
+import '../theme/theme_controller.dart';
 
 class Injection {
   Injection._();
@@ -39,6 +40,11 @@ class Injection {
     final SupportRepository supportRepository = SupabaseSupportRepository();
 
     return [
+      // Theme Provider (Dark / Light Mode)
+      ChangeNotifierProvider<ThemeController>(
+        create: (_) => ThemeController(),
+      ),
+
       // Auth Provider
       ChangeNotifierProvider<AuthController>(
         create: (_) => AuthController(repository: authRepository),

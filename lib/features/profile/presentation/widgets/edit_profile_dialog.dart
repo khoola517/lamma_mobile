@@ -83,7 +83,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
   void _showImageSourceOptions() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surfaceCard,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -194,7 +194,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surfaceCard,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 440),
@@ -234,7 +234,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                     ),
                     IconButton(
                       onPressed: _isLoading ? null : () => Navigator.of(context).pop(false),
-                      icon: const Icon(Icons.close_rounded, color: AppColors.textTertiary),
+                      icon: Icon(Icons.close_rounded, color: AppColors.textTertiary),
                       splashRadius: 20,
                     ),
                   ],
@@ -347,16 +347,16 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                   decoration: InputDecoration(
                     hintText: 'أدخل اسمك الكريم',
                     hintStyle: GoogleFonts.cairo(color: AppColors.textTertiary, fontSize: 13),
-                    prefixIcon: const Icon(Icons.person_outline_rounded, color: AppColors.textSecondary),
+                    prefixIcon: Icon(Icons.person_outline_rounded, color: AppColors.textSecondary),
                     filled: true,
                     fillColor: AppColors.surfaceSection,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: AppColors.borderLight),
+                      borderSide: BorderSide(color: AppColors.borderLight),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: AppColors.borderLight),
+                      borderSide: BorderSide(color: AppColors.borderLight),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -393,16 +393,16 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                   decoration: InputDecoration(
                     hintText: '77XXXXXXX',
                     hintStyle: GoogleFonts.cairo(color: AppColors.textTertiary, fontSize: 13),
-                    prefixIcon: const Icon(Icons.phone_outlined, color: AppColors.textSecondary),
+                    prefixIcon: Icon(Icons.phone_outlined, color: AppColors.textSecondary),
                     filled: true,
                     fillColor: AppColors.surfaceSection,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: AppColors.borderLight),
+                      borderSide: BorderSide(color: AppColors.borderLight),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: AppColors.borderLight),
+                      borderSide: BorderSide(color: AppColors.borderLight),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -429,7 +429,7 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          side: const BorderSide(color: AppColors.borderLight),
+                          side: BorderSide(color: AppColors.borderLight),
                         ),
                         child: Text(
                           'إلغاء',

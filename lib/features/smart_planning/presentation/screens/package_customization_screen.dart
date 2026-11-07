@@ -349,9 +349,9 @@ class _PackageCustomizationScreenState
             child: Container(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surfaceCard,
                 border:
-                    const Border(top: BorderSide(color: AppColors.borderLight)),
+                    Border(top: BorderSide(color: AppColors.borderLight)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),

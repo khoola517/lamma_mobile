@@ -510,7 +510,7 @@ class _SupportScreenState extends State<SupportScreen>
               Container(
                 width: 80,
                 height: 80,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.primaryLight,
                   shape: BoxShape.circle,
                 ),
@@ -689,7 +689,7 @@ class _SupportScreenState extends State<SupportScreen>
             // Resolution Section (If available)
             if (complaint.resolution != null &&
                 complaint.resolution!.trim().isNotEmpty) ...[
-              const Divider(color: AppColors.borderLight, height: 20),
+              Divider(color: AppColors.borderLight, height: 20),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -753,11 +753,11 @@ class _SupportScreenState extends State<SupportScreen>
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.borderDefault),
+        borderSide: BorderSide(color: AppColors.borderDefault),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.borderLight),
+        borderSide: BorderSide(color: AppColors.borderLight),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),

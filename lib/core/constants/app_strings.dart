@@ -40,7 +40,7 @@ class AppStrings {
   static const String forgotPassword = 'نسيت كلمة المرور؟';
   static const String rememberMe = 'تذكرني';
   static const String loginButton = 'تسجيل الدخول';
-  static const String noAccount = 'ليس لديك حساب على المنصة؟';
+  static const String noAccount = 'ليس لديك حساب ؟';
   static const String createAccount = 'إنشاء حساب جديد';
   static const String registerTitle = 'إنشاء حساب جديد';
   static const String registerSubtitle =

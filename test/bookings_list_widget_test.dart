@@ -152,19 +152,7 @@ class _MockTestBookingsRepository implements BookingsRepository {
       );
 
   @override
-  RealtimeSubscriptionToken subscribeToAuditLogs({
-    required String customerId,
-    required void Function() onData,
-    void Function()? onResync,
-  }) =>
-      const RealtimeSubscriptionToken(
-        channelKey: 'test_audit_b',
-        listenerId: '1',
-      );
-
-  @override
   RealtimeSubscriptionToken subscribeToBookingStatusHistory({
-    required String customerId,
     required void Function() onData,
     void Function()? onResync,
   }) =>

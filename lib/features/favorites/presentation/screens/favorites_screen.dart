@@ -96,7 +96,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     // 5. Populated List with Refresh Indicator
     return RefreshIndicator(
       color: AppColors.primary,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surfaceCard,
       onRefresh: () => favoritesController.loadFavorites(),
       child: ListView.separated(
         physics: const AlwaysScrollableScrollPhysics(),

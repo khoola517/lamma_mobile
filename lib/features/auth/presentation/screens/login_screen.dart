@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../../app/routes/app_routes.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/responsive.dart';
@@ -85,48 +86,68 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 20),
-                  // Welcome Header
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
+                  const SizedBox(height: 12),
+                  // الشعار أول شيء في الصفحة
+                  Center(
+                    child: Container(
+                      width: 84,
+                      height: 84,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.12),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Image.asset(
+                        AppAssets.appLogo,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Container(
                           color: AppColors.primaryVeryLight,
-                          borderRadius: BorderRadius.circular(14),
-                          border:
-                              Border.all(color: AppColors.borderChipSelected),
-                        ),
-                        child: const Icon(
-                          Icons.celebration_rounded,
-                          color: AppColors.primary,
-                          size: 26,
+                          child: const Icon(
+                            Icons.celebration_rounded,
+                            color: AppColors.primary,
+                            size: 36,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        AppStrings.loginTitle,
-                        style: GoogleFonts.cairo(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        AppStrings.loginSubtitle,
-                        style: GoogleFonts.cairo(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
+                  // Welcome Header
+                  Center(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Text(
+                            AppStrings.loginTitle,
+                            style: GoogleFonts.cairo(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          AppStrings.loginSubtitle,
+                          style: GoogleFonts.cairo(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 28),
 
                   // Email Input
                   CustomTextField(
@@ -135,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
-                    prefixIcon: const Icon(
+                    suffixIcon: Icon(
                       Icons.mail_outline_rounded,
                       color: AppColors.textTertiary,
                       size: 20,
@@ -160,11 +181,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     isPassword: true,
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _handleLogin(),
-                    prefixIcon: const Icon(
-                      Icons.lock_outline_rounded,
-                      color: AppColors.textTertiary,
-                      size: 20,
-                    ),
+                    // prefixIcon: const Icon(
+                    //   Icons.lock_outline_rounded,
+                    //   color: AppColors.textTertiary,
+                    //   size: 20,
+                    // ),
                     topTrailing: TextButton(
                       onPressed: _navigateToForgotPassword,
                       style: TextButton.styleFrom(
@@ -201,6 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 24,
                         child: Checkbox(
                           value: _rememberMe,
+                          checkColor: Colors.white,
                           activeColor: AppColors.primary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(5),
@@ -230,7 +252,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Login Submit Button
                   CustomButton(
                     text: AppStrings.loginButton,
-                    icon: Icons.login_rounded,
+                    //icon: Icons.login_rounded,
                     isLoading: isLoading,
                     onPressed: isLoading ? null : _handleLogin,
                   ),
@@ -239,12 +261,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Bottom Registration Link
                   Container(
                     padding: const EdgeInsets.only(top: 20),
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                       border:
                           Border(top: BorderSide(color: AppColors.borderLight)),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
                           AppStrings.noAccount,

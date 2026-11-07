@@ -124,11 +124,11 @@ class _CustomTextFieldState extends State<CustomTextField> {
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.borderDefault),
+              borderSide: BorderSide(color: AppColors.borderDefault),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.borderDefault),
+              borderSide: BorderSide(color: AppColors.borderDefault),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

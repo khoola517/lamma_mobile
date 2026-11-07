@@ -2,6 +2,9 @@
 class AppAssets {
   AppAssets._();
 
+  // App Brand Logo
+  static const String appLogo = 'assets/images/logo.png';
+
   // Onboarding Artworks
   static const String onboarding1 =
       'https://lh3.googleusercontent.com/aida/AEtjO1WY3Nuy4MSdfDInDU2x5_jGDIYwzc9Bub0wA57Gl_-Y2NbA1zPGoKND8ZwK51bjxWTvMKR-JKkEtuNAQs3cm0yGukQSkz_1VQg-x6fA_zjt0YKuKZRUUvhv8RwxMV5OvcYI2fnx-lw_o5jvJ4UCW8c7WBf8Uq8CeQgPaYjvjpPZfBWcGWWI2q3m98nwU4gbisDRLpTcHr-SFAQkhAuFIacAbHBbj8xHFuirp1GV_jHE5R4BfD-oIMcmtdaP';

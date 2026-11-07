@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../../app/routes/app_routes.dart';
+import '../../../../app/theme/theme_controller.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/responsive.dart';
@@ -16,6 +17,7 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authController = context.watch<AuthController>();
+    final themeController = context.watch<ThemeController>();
     final user = authController.user;
 
     return Scaffold(
@@ -190,12 +192,7 @@ class ProfileScreen extends StatelessWidget {
                       Navigator.of(context).pushNamed(AppRoutes.notifications);
                     },
                   ),
-                  // _buildMenuItem(
-                  //   icon: Icons.payment_outlined,
-                  //   title: 'طرق الدفع والمحفظة',
-                  //   subtitle: 'إدارة بطاقات الدفع والحسابات',
-                  //   onTap: () {},
-                  // ),
+                  _buildThemeSettingItem(context, themeController),
                 ]),
                 const SizedBox(height: 20),
 
@@ -347,9 +344,238 @@ class ProfileScreen extends StatelessWidget {
                 color: AppColors.primary,
               ),
             )
-          : const Icon(Icons.chevron_left_rounded,
+          : Icon(Icons.chevron_left_rounded,
               color: AppColors.textTertiary, size: 20),
       onTap: onTap,
+    );
+  }
+
+  Widget _buildThemeSettingItem(
+    BuildContext context,
+    ThemeController themeController,
+  ) {
+    final isDark = themeController.isDarkMode;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      leading: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF332900) : AppColors.primaryVeryLight,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(
+          isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+          color: AppColors.primary,
+          size: 20,
+        ),
+      ),
+      title: Text(
+        'المظهر (الوضع الليلي)',
+        style: GoogleFonts.cairo(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        themeController.themeModeName,
+        style: GoogleFonts.cairo(
+          fontSize: 11,
+          fontWeight: FontWeight.w400,
+          color: AppColors.textTertiary,
+        ),
+      ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Switch.adaptive(
+            value: isDark,
+            activeColor: AppColors.primary,
+            activeTrackColor: AppColors.primaryDark,
+            onChanged: (val) {
+              themeController.toggleDarkMode(val);
+            },
+          ),
+          Icon(
+            Icons.chevron_left_rounded,
+            color: AppColors.textTertiary,
+            size: 18,
+          ),
+        ],
+      ),
+      onTap: () => _showThemeModeSelectionDialog(context, themeController),
+    );
+  }
+
+  void _showThemeModeSelectionDialog(
+    BuildContext context,
+    ThemeController themeController,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surfaceCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.borderStrong,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  'اختيار مظهر التطبيق',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cairo(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'اختر المظهر المفضل لديك، وسيتم حفظ اختيارك تلقائياً',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.cairo(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _buildThemeOptionTile(
+                  context: ctx,
+                  themeController: themeController,
+                  mode: ThemeMode.light,
+                  icon: Icons.light_mode_rounded,
+                  title: 'الوضع الفاتح (النهاري)',
+                  subtitle: 'ألوان ساطعة وتصميم مشرق ومريح للعين نهاراً',
+                ),
+                const SizedBox(height: 10),
+                _buildThemeOptionTile(
+                  context: ctx,
+                  themeController: themeController,
+                  mode: ThemeMode.dark,
+                  icon: Icons.dark_mode_rounded,
+                  title: 'الوضع الداكن (الليلي)',
+                  subtitle: 'خلفيات داكنة تقلل إجهاد العين وتحافظ على البطارية',
+                ),
+                const SizedBox(height: 10),
+                _buildThemeOptionTile(
+                  context: ctx,
+                  themeController: themeController,
+                  mode: ThemeMode.system,
+                  icon: Icons.settings_brightness_rounded,
+                  title: 'تلقائي (حسب نظام الجهاز)',
+                  subtitle: 'يتوافق تلقائياً مع مظهر الهاتف العام',
+                ),
+                const SizedBox(height: 12),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildThemeOptionTile({
+    required BuildContext context,
+    required ThemeController themeController,
+    required ThemeMode mode,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    final isSelected = themeController.themeMode == mode;
+    return InkWell(
+      onTap: () {
+        themeController.setThemeMode(mode);
+        Navigator.of(context).pop();
+      },
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (themeController.isDarkMode
+                  ? const Color(0xFF332900)
+                  : AppColors.primaryLight.withOpacity(0.5))
+              : AppColors.surfaceSection,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : AppColors.borderLight,
+            width: isSelected ? 1.6 : 1.0,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : AppColors.surfaceWarm,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? Colors.black : AppColors.textSecondary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.cairo(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.cairo(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.primary,
+                size: 22,
+              )
+            else
+              Icon(
+                Icons.radio_button_unchecked_rounded,
+                color: AppColors.borderStrong,
+                size: 20,
+              ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -183,7 +183,6 @@ class _CategoryServicesScreenState extends State<CategoryServicesScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 1,
         title: Text(
@@ -196,7 +195,7 @@ class _CategoryServicesScreenState extends State<CategoryServicesScreen> {
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_forward_ios_rounded,
             color: AppColors.textPrimary,
             size: 20,
@@ -246,7 +245,7 @@ class _CategoryServicesScreenState extends State<CategoryServicesScreen> {
         padding: const EdgeInsets.only(top: 16, bottom: 32),
         itemCount: _services.length,
         separatorBuilder: (_, __) => const SizedBox(height: 14),
-        itemBuilder: (context, index) {
+        itemBuilder: (_, index) {
           final service = _services[index];
           FavoritesController? favCtrl;
           try {
@@ -263,17 +262,15 @@ class _CategoryServicesScreenState extends State<CategoryServicesScreen> {
             rating: service.rating,
             imageUrl: service.imageUrl,
             isFavorite: isFav,
-            onTap: () {
-              Navigator.of(context).pushNamed(
+            onTap: () async {
+              await Navigator.of(context).pushNamed(
                 AppRoutes.serviceDetails,
                 arguments: service,
-              ).then((_) {
-                if (mounted) {
-                  try {
-                    context.read<FavoritesController>().loadFavorites(silent: true);
-                  } catch (_) {}
-                }
-              });
+              );
+              if (!mounted) return;
+              try {
+                context.read<FavoritesController>().loadFavorites(silent: true);
+              } catch (_) {}
             },
             onFavoriteToggle: () => _onFavoriteToggle(service.id),
           );

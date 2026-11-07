@@ -86,7 +86,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Container(
                                 color: AppColors.surfaceSection,
-                                child: const Icon(Icons.image, size: 50, color: AppColors.textTertiary),
+                                child: Icon(Icons.image, size: 50, color: AppColors.textTertiary),
                               ),
                             );
                           },
@@ -94,7 +94,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                       else
                         Container(
                           color: AppColors.surfaceSection,
-                          child: const Center(
+                          child: Center(
                             child: Icon(Icons.image_not_supported_outlined, size: 50, color: AppColors.textTertiary),
                           ),
                         ),
@@ -665,9 +665,9 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             child: Container(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
               decoration: BoxDecoration(
-                color: Colors.white,
-                border: const Border(
-                    top: BorderSide(color: Color(0xFFECEEF2), width: 1)),
+                color: AppColors.surfaceCard,
+                border: Border(
+                    top: BorderSide(color: AppColors.borderLight, width: 1)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.04),
@@ -690,7 +690,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                             style: GoogleFonts.cairo(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: const Color(0xFF8F95A3),
+                              color: AppColors.textTertiary,
                             ),
                           ),
                           Text(
@@ -698,7 +698,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                             style: GoogleFonts.cairo(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
-                              color: const Color(0xFF1E2538),
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ],
@@ -732,9 +732,9 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceCard,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFECEEF2)),
+        border: Border.all(color: AppColors.borderLight),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.015),
@@ -756,9 +756,9 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFECEEF2)),
+        border: Border.all(color: AppColors.borderLight),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.015),
@@ -848,9 +848,9 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surfaceSection,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFEFEBE4)),
+                border: Border.all(color: AppColors.borderLight),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,

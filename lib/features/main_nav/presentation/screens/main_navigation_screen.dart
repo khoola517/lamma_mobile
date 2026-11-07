@@ -64,8 +64,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: const Border(top: BorderSide(color: AppColors.borderLight)),
+          color: AppColors.surfaceCard,
+          border: Border(top: BorderSide(color: AppColors.borderLight)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),

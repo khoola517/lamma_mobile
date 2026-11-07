@@ -64,9 +64,9 @@ class _AddReviewBottomSheetState extends State<AddReviewBottomSheet> {
     final reviewsController = context.watch<ReviewsController>();
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + bottomInset),
       child: Form(
@@ -121,12 +121,12 @@ class _AddReviewBottomSheetState extends State<AddReviewBottomSheet> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close_rounded,
+                    icon: Icon(Icons.close_rounded,
                         color: AppColors.textSecondary),
                   ),
                 ],
               ),
-              const Divider(color: AppColors.borderLight, height: 24),
+              Divider(color: AppColors.borderLight, height: 24),
 
               // Rating Stars Selector
               Center(
@@ -224,11 +224,11 @@ class _AddReviewBottomSheetState extends State<AddReviewBottomSheet> {
                   fillColor: AppColors.surfaceWarm,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppColors.borderDefault),
+                    borderSide: BorderSide(color: AppColors.borderDefault),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
-                    borderSide: const BorderSide(color: AppColors.borderLight),
+                    borderSide: BorderSide(color: AppColors.borderLight),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),

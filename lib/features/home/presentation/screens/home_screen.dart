@@ -119,9 +119,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (homeController.status == HomeStatus.loading &&
         homeController.allServices.isEmpty) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: AppColors.background,
-        body: LoadingView(message: 'جاري تحميل الخدمات والتصنيفات...'),
+        body: const LoadingView(message: 'جاري تحميل الخدمات والتصنيفات...'),
       );
     }
 
@@ -249,15 +249,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          //color: AppColors.surfaceSection,
+                          color: AppColors.surfaceCard,
                           borderRadius: BorderRadius.circular(14),
-                          //border: Border.all(color: AppColors.primary),
-                          //border: Border.all(color: AppColors.borderLight),
+                          border: Border.all(color: AppColors.borderLight),
                         ),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.search_rounded,
                               //color: AppColors.primary,
                               color: AppColors.textTertiary,

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../../app/routes/app_routes.dart';
+import '../../../../core/constants/app_assets.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_strings.dart';
 import '../controllers/auth_controller.dart';
 
-/// شاشة بوابة المصادقة (Auth Gate) للتحقق الفعلي من الجلسة عند بدء التشغيل
+/// شاشة بوابة المصادقة والشعار (Splash / Auth Gate)
 class AuthGateScreen extends StatefulWidget {
   const AuthGateScreen({super.key});
 
@@ -25,7 +24,11 @@ class _AuthGateScreenState extends State<AuthGateScreen> {
 
   Future<void> _checkSessionAndNavigate() async {
     final authController = context.read<AuthController>();
-    await authController.checkAuth();
+    // مهلة ملائمة لعرض الشعار بانسيابية أثناء التحقق من الجلسة
+    await Future.wait([
+      authController.checkAuth(),
+      Future.delayed(const Duration(milliseconds: 1200)),
+    ]);
 
     if (!mounted) return;
 
@@ -39,49 +42,47 @@ class _AuthGateScreenState extends State<AuthGateScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfaceWarm,
+      backgroundColor: AppColors.primary,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // الشعار والأيقونة
+            // صورة الشعار بدلاً من كلمة خدمتي مع حواف ناعمة وظل أنيق
             Container(
-              width: 80,
-              height: 80,
+              width: 130,
+              height: 130,
               decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(24),
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(28),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.25),
+                    color: Colors.black.withOpacity(0.18),
                     blurRadius: 20,
                     offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.celebration_rounded,
-                color: Colors.white,
-                size: 42,
+              clipBehavior: Clip.antiAlias,
+              child: Image.asset(
+                AppAssets.appLogo,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: Colors.white,
+                  child: const Icon(
+                    Icons.celebration_rounded,
+                    color: AppColors.primary,
+                    size: 58,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 20),
-            Text(
-              AppStrings.appName,
-              style: GoogleFonts.cairo(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primary,
-                letterSpacing: 0.5,
-              ),
-            ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 36),
             const SizedBox(
-              width: 24,
-              height: 24,
+              width: 26,
+              height: 26,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             ),
           ],

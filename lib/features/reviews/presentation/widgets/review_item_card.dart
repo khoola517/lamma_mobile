@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../data/models/review_model.dart';
 
 class ReviewItemCard extends StatelessWidget {
@@ -13,9 +14,9 @@ class ReviewItemCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFECEEF2)),
+        border: Border.all(color: AppColors.borderLight),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -30,7 +31,7 @@ class ReviewItemCard extends StatelessWidget {
           // الصورة الرمزية للمستخدم (Avatar)
           CircleAvatar(
             radius: 22,
-            backgroundColor: const Color(0xFFD1D5DB),
+            backgroundColor: AppColors.primaryLight,
             backgroundImage: (review.customerAvatar != null &&
                     review.customerAvatar!.trim().isNotEmpty)
                 ? NetworkImage(review.customerAvatar!.trim())
@@ -44,7 +45,7 @@ class ReviewItemCard extends StatelessWidget {
                     style: GoogleFonts.cairo(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF374151),
+                      color: AppColors.primary,
                     ),
                   )
                 : null,
@@ -64,7 +65,7 @@ class ReviewItemCard extends StatelessWidget {
                   style: GoogleFonts.cairo(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF1E2538),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -77,7 +78,7 @@ class ReviewItemCard extends StatelessWidget {
                       fontSize: 13,
                       height: 1.4,
                       fontWeight: FontWeight.w500,
-                      color: const Color(0xFF4B5563),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 const SizedBox(height: 6),
@@ -92,7 +93,7 @@ class ReviewItemCard extends StatelessWidget {
                       size: 16,
                       color: starIndex < review.rating
                           ? const Color(0xFFF59E0B)
-                          : const Color(0xFFD1D5DB),
+                          : AppColors.borderStrong,
                     ),
                   ),
                 ),

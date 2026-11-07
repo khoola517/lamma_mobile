@@ -67,7 +67,7 @@ class SmartPlanResultScreen extends StatelessWidget {
                       Container(
                         width: 52,
                         height: 52,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           color: AppColors.primaryVeryLight,
                           shape: BoxShape.circle,
                         ),
@@ -100,7 +100,7 @@ class SmartPlanResultScreen extends StatelessWidget {
                       // Meta Pills
                       Container(
                         padding: const EdgeInsets.only(top: 14),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           border: Border(
                               top: BorderSide(color: AppColors.borderLight)),
                         ),

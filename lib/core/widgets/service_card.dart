@@ -65,7 +65,7 @@ class ServiceCard extends StatelessWidget {
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) => Container(
                             color: AppColors.surfaceSection,
-                            child: const Icon(
+                            child: Icon(
                               Icons.image_outlined,
                               size: 40,
                               color: AppColors.textTertiary,
@@ -78,7 +78,7 @@ class ServiceCard extends StatelessWidget {
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) => Container(
                             color: AppColors.surfaceSection,
-                            child: const Icon(
+                            child: Icon(
                               Icons.image_outlined,
                               size: 40,
                               color: AppColors.textTertiary,
@@ -88,7 +88,7 @@ class ServiceCard extends StatelessWidget {
                       else
                         Container(
                           color: AppColors.surfaceSection,
-                          child: const Icon(
+                          child: Icon(
                             Icons.image_outlined,
                             size: 40,
                             color: AppColors.textTertiary,
@@ -234,7 +234,7 @@ class ServiceCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Container(
                       padding: const EdgeInsets.only(top: 8),
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         border: Border(
                           top: BorderSide(color: AppColors.borderLight),
                         ),

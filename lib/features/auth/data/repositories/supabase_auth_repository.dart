@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
 import '../../../../core/services/supabase_realtime_service.dart';
+import '../../../../core/services/fcm_service.dart';
 import '../../data/models/user_model.dart';
 import '../../data/models/auth_result.dart';
 import '../../data/utils/auth_exception_handler.dart';
@@ -112,6 +113,13 @@ class SupabaseAuthRepository implements AuthRepository {
   // 4. تسجيل الخروج
   @override
   Future<void> logout() async {
+    try {
+      // إلغاء ربط التوكن من Supabase قبل إنهاء الجلسة
+      await FcmService.instance.unregisterToken();
+    } catch (e) {
+      debugPrint('FCM unregister note: $e');
+    }
+
     try {
       await _client.auth.signOut();
     } catch (e) {

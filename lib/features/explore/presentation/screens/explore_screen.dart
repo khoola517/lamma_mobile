@@ -152,9 +152,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
     // عرض حالة التحميل إن كانت البيانات لا تزال قيد الجلب لأول مرة
     if (homeController.status == HomeStatus.loading &&
         homeController.allServices.isEmpty) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: AppColors.background,
-        body: LoadingView(message: 'جاري تحميل الخدمات والتصنيفات...'),
+        body: const LoadingView(message: 'جاري تحميل الخدمات والتصنيفات...'),
       );
     }
 

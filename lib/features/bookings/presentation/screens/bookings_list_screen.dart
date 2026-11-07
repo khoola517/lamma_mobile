@@ -182,7 +182,7 @@ class BookingsListScreen extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.confirmation_number_outlined,
+                    Icon(Icons.confirmation_number_outlined,
                         size: 16, color: AppColors.textTertiary),
                     const SizedBox(width: 6),
                     Text(
@@ -214,7 +214,7 @@ class BookingsListScreen extends StatelessWidget {
               ],
             ),
           ),
-          const Divider(height: 1, color: AppColors.borderLight),
+          Divider(height: 1, color: AppColors.borderLight),
 
           // Main Service Info (Tappable to view service details)
           Material(
@@ -328,9 +328,9 @@ class BookingsListScreen extends StatelessWidget {
           // Price & Actions Footer
           Container(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: AppColors.surfaceWarm,
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(18)),
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
