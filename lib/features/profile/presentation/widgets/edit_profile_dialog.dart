@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../../../auth/data/models/user_model.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 
@@ -264,22 +265,14 @@ class _EditProfileDialogState extends State<EditProfileDialog> {
                               ? Image.memory(
                                   _selectedImageBytes!,
                                   fit: BoxFit.cover,
+                                  width: 104,
+                                  height: 104,
                                 )
-                              : (avatarUrl != null && avatarUrl.isNotEmpty)
-                                  ? Image.network(
-                                      avatarUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (_, __, ___) => const Icon(
-                                        Icons.person,
-                                        size: 54,
-                                        color: AppColors.primary,
-                                      ),
-                                    )
-                                  : const Icon(
-                                      Icons.person,
-                                      size: 54,
-                                      color: AppColors.primary,
-                                    ),
+                              : AppAvatar(
+                                  imageUrl: avatarUrl,
+                                  size: 104,
+                                  name: widget.user?.name,
+                                ),
                         ),
                       ),
                       Positioned(

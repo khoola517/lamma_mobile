@@ -29,6 +29,33 @@ class ReviewsController extends ChangeNotifier {
 
   int get totalReviewsCount => _reviews.length;
 
+  /// التحقق من أهلية المستخدم للتقييم وجلب معرّف الحجز إن وجد
+  Future<String?> checkUserBookingEligibility(String serviceId) async {
+    try {
+      return await repository.getUserBookingIdForService(serviceId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// التحقق مما إذا كان المستخدم قد حجز هذه الخدمة
+  Future<bool> hasUserBookedService(String serviceId) async {
+    try {
+      return await repository.hasUserBookedService(serviceId);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// التحقق مما إذا كان المستخدم قد قيّم الخدمة مسبقاً
+  Future<bool> hasUserReviewed(String serviceId) async {
+    try {
+      return await repository.hasUserReviewedService(serviceId);
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<void> loadServiceReviews(String serviceId) async {
     if (_activeServiceId != serviceId || _reviewsToken == null) {
       _reviewsToken?.cancel();

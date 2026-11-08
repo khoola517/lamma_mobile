@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../../data/models/review_model.dart';
 
 class ReviewItemCard extends StatelessWidget {
@@ -29,26 +30,10 @@ class ReviewItemCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // الصورة الرمزية للمستخدم (Avatar)
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: AppColors.primaryLight,
-            backgroundImage: (review.customerAvatar != null &&
-                    review.customerAvatar!.trim().isNotEmpty)
-                ? NetworkImage(review.customerAvatar!.trim())
-                : null,
-            child: (review.customerAvatar == null ||
-                    review.customerAvatar!.trim().isEmpty)
-                ? Text(
-                    review.customerName.trim().isNotEmpty
-                        ? review.customerName.trim().characters.first
-                        : 'م',
-                    style: GoogleFonts.cairo(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  )
-                : null,
+          AppAvatar(
+            imageUrl: review.customerAvatar,
+            size: 44,
+            name: review.customerName,
           ),
           const SizedBox(width: 14),
 

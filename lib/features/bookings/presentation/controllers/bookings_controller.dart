@@ -26,6 +26,24 @@ class BookingsController extends ChangeNotifier {
   int get selectedTabIndex => _selectedTabIndex;
   List<BookingModel> get allBookings => _bookings;
 
+  /// فحص مباشر وسريع من الذاكرة عما إذا كان العميل قد حجز هذه الخدمة بحجز غير ملغي
+  bool hasBookedService(String serviceId) {
+    return _bookings.any((b) =>
+        b.status != BookingStatus.cancelled &&
+        b.items.any((item) => item.serviceId == serviceId));
+  }
+
+  /// إرجاع معرّف الحجز التابع لهذه الخدمة إن وُجد
+  String? getBookingIdForService(String serviceId) {
+    for (final b in _bookings) {
+      if (b.status != BookingStatus.cancelled) {
+        final hasItem = b.items.any((item) => item.serviceId == serviceId);
+        if (hasItem) return b.id;
+      }
+    }
+    return null;
+  }
+
   List<BookingModel> get currentFilteredBookings {
     switch (_selectedTabIndex) {
       case 1:

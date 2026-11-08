@@ -10,6 +10,15 @@ abstract class ReviewsRepository {
     required String comment,
   });
 
+  /// يتحقق مما إذا كان المستخدم الحالي لديه حجز فعلي (غير ملغي) لهذه الخدمة
+  Future<bool> hasUserBookedService(String serviceId);
+
+  /// يجلب معرّف الحجز الخاص بالمستخدم لهذه الخدمة إن وجد
+  Future<String?> getUserBookingIdForService(String serviceId);
+
+  /// يتحقق مما إذا كان المستخدم قد قيّم هذه الخدمة مسبقاً
+  Future<bool> hasUserReviewedService(String serviceId);
+
   RealtimeSubscriptionToken subscribeToServiceReviews({
     required String serviceId,
     required void Function() onData,

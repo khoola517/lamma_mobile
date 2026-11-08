@@ -6,6 +6,7 @@ import '../../../../app/theme/theme_controller.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_strings.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../core/widgets/app_avatar.dart';
 import '../../../auth/presentation/controllers/auth_controller.dart';
 import '../widgets/edit_profile_dialog.dart';
 
@@ -67,22 +68,10 @@ class ProfileScreen extends StatelessWidget {
                                 border: Border.all(
                                     color: AppColors.primaryLight, width: 2.5),
                               ),
-                              child: ClipOval(
-                                child: user?.avatarUrl != null
-                                    ? Image.network(
-                                        user!.avatarUrl!,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => const Icon(
-                                          Icons.person,
-                                          size: 36,
-                                          color: AppColors.primary,
-                                        ),
-                                      )
-                                    : const Icon(
-                                        Icons.person,
-                                        size: 36,
-                                        color: AppColors.primary,
-                                      ),
+                              child: AppAvatar(
+                                imageUrl: user?.avatarUrl,
+                                size: 64,
+                                name: user?.name,
                               ),
                             ),
                             Positioned(

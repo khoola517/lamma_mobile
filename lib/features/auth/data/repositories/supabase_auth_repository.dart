@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/config/supabase_config.dart';
@@ -235,18 +236,26 @@ class SupabaseAuthRepository implements AuthRepository {
     final cleanExt = fileExtension.replaceAll('.', '').toLowerCase();
     final fileName =
         '${user.id}-${DateTime.now().millisecondsSinceEpoch}.$cleanExt';
-    final storagePath = 'avatars/$fileName';
+    final storagePath = fileName;
 
-    await _client.storage.from('avatars').uploadBinary(
-          storagePath,
-          imageBytes,
-          fileOptions: FileOptions(
-            contentType: 'image/$cleanExt',
-            upsert: true,
-          ),
-        );
+    try {
+      await _client.storage.from('avatars').uploadBinary(
+            storagePath,
+            imageBytes,
+            fileOptions: FileOptions(
+              contentType: 'image/$cleanExt',
+              upsert: true,
+            ),
+          );
 
-    return _client.storage.from('avatars').getPublicUrl(storagePath);
+      return _client.storage.from('avatars').getPublicUrl(storagePath);
+    } catch (e) {
+      debugPrint('uploadAvatar storage error: $e');
+      // إذا فشل الرفع في Supabase Storage (مثلاً خطأ 404 لعدم إنشاء الـ bucket أو 403 للأذونات)،
+      // يتم اعتماد بديل فوري وآمن بتخزين الصورة كـ Base64 Data URI مباشرة في البروفايل لمنع الخطأ
+      final base64String = base64Encode(imageBytes);
+      return 'data:image/$cleanExt;base64,$base64String';
+    }
   }
 
   @override

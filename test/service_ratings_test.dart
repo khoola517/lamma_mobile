@@ -7,10 +7,27 @@ import 'package:khadematy/features/reviews/domain/repositories/reviews_repositor
 
 class MockReviewsRepository implements ReviewsRepository {
   List<ReviewModel> reviews = [];
+  Set<String> bookedServiceIds = {};
+  Map<String, String> serviceBookingMap = {};
 
   @override
   Future<List<ReviewModel>> getServiceReviews(String serviceId) async {
     return reviews;
+  }
+
+  @override
+  Future<bool> hasUserBookedService(String serviceId) async {
+    return bookedServiceIds.contains(serviceId);
+  }
+
+  @override
+  Future<String?> getUserBookingIdForService(String serviceId) async {
+    return serviceBookingMap[serviceId];
+  }
+
+  @override
+  Future<bool> hasUserReviewedService(String serviceId) async {
+    return reviews.any((r) => r.serviceId == serviceId);
   }
 
   @override
@@ -20,12 +37,18 @@ class MockReviewsRepository implements ReviewsRepository {
     required int rating,
     required String comment,
   }) async {
+    final validBookingId = bookingId ?? serviceBookingMap[serviceId];
+    if (validBookingId == null) {
+      throw Exception('عذراً، التقييم متاح فقط للعملاء الذين قاموا بحجز هذه الخدمة مسبقاً.');
+    }
+
     reviews.add(
       ReviewModel(
         id: 'test-id',
         serviceId: serviceId,
         customerId: 'customer-1',
         customerName: 'أحمد',
+        bookingId: validBookingId,
         rating: rating,
         comment: comment,
         createdAt: DateTime.now(),
@@ -136,6 +159,40 @@ void main() {
 
       expect(controller.totalReviewsCount, 0);
       expect(controller.averageRating, 0.0);
+    });
+
+    test('Reviews restriction: Only user who booked service can submit review', () async {
+      final repo = MockReviewsRepository();
+      repo.bookedServiceIds.add('service-booked');
+      repo.serviceBookingMap['service-booked'] = 'booking-123';
+
+      final controller = ReviewsController(repository: repo);
+
+      // 1. User has booking -> Can review successfully
+      final canReviewId = await controller.checkUserBookingEligibility('service-booked');
+      expect(canReviewId, 'booking-123');
+
+      final success = await controller.submitReview(
+        serviceId: 'service-booked',
+        bookingId: canReviewId,
+        rating: 5,
+        comment: 'خدمة ممتازة وتجربة رائعة',
+      );
+      expect(success, isTrue);
+      expect(controller.reviews.length, 1);
+      expect(controller.reviews.first.bookingId, 'booking-123');
+
+      // 2. User has NOT booked -> Submission fails and error is set
+      final unbookedEligible = await controller.checkUserBookingEligibility('service-not-booked');
+      expect(unbookedEligible, isNull);
+
+      final failedSuccess = await controller.submitReview(
+        serviceId: 'service-not-booked',
+        rating: 4,
+        comment: 'محاولة تقييم دون حجز',
+      );
+      expect(failedSuccess, isFalse);
+      expect(controller.error, contains('التقييم متاح فقط للعملاء الذين قاموا بحجز هذه الخدمة'));
     });
   });
 }

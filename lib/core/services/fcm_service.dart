@@ -18,7 +18,7 @@ class FcmService {
   FcmService._();
   static final FcmService instance = FcmService._();
 
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  FirebaseMessaging get _messaging => FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
@@ -151,6 +151,7 @@ class FcmService {
   void _initAuthListener() {
     SupabaseConfig.client.auth.onAuthStateChange.listen((data) {
       final event = data.event;
+      debugPrint('>>> FCM AuthListener event: $event');
       if (event == AuthChangeEvent.signedIn || event == AuthChangeEvent.tokenRefreshed) {
         syncTokenWithSupabase();
       } else if (event == AuthChangeEvent.signedOut) {
@@ -159,7 +160,9 @@ class FcmService {
     });
 
     // مزامنة فورية إذا كان المستخدم مسجلاً بالفعل
-    if (SupabaseConfig.client.auth.currentUser != null) {
+    final currentUser = SupabaseConfig.client.auth.currentUser;
+    debugPrint('>>> FCM AuthListener: currentUser = ${currentUser?.id}');
+    if (currentUser != null) {
       syncTokenWithSupabase();
     }
   }
@@ -168,18 +171,20 @@ class FcmService {
   Future<void> syncTokenWithSupabase() async {
     final user = SupabaseConfig.client.auth.currentUser;
     if (user == null) {
-      debugPrint('FCM: User not authenticated, skipping token registration');
+      debugPrint('>>> FCM: User not authenticated, skipping token registration');
       return;
     }
 
     try {
+      debugPrint('>>> FCM: Requesting device registration token...');
       final token = await _messaging.getToken();
       if (token == null || token.isEmpty) {
-        debugPrint('FCM: Failed to obtain device token');
+        debugPrint('>>> FCM: Failed to obtain device token (token is null or empty)');
         return;
       }
 
       _currentToken = token;
+      debugPrint('>>> FCM TOKEN ACQUIRED: $token');
 
       final platform = Platform.isAndroid ? 'android' : (Platform.isIOS ? 'ios' : 'web');
       final deviceInfo = {
@@ -197,9 +202,10 @@ class FcmService {
         },
       );
 
-      debugPrint('FCM Token registered successfully in Supabase for user: ${user.id}');
-    } catch (e) {
-      debugPrint('FCM Token registration error in Supabase: $e');
+      debugPrint('>>> FCM Token registered successfully in Supabase for user: ${user.id}');
+    } catch (e, stack) {
+      debugPrint('>>> FCM Token registration error in Supabase: $e');
+      debugPrint('$stack');
     }
   }
 
