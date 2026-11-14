@@ -195,12 +195,11 @@ class _CategoryServicesScreenState extends State<CategoryServicesScreen> {
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_forward_ios_rounded,
-            color: AppColors.textPrimary,
-            size: 20,
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppColors.primary,
           ),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(context).maybePop(),
         ),
       ),
       body: SafeArea(
@@ -261,6 +260,7 @@ class _CategoryServicesScreenState extends State<CategoryServicesScreen> {
             priceText: service.formattedPrice,
             rating: service.rating,
             imageUrl: service.imageUrl,
+            images: service.allImages,
             isFavorite: isFav,
             onTap: () async {
               await Navigator.of(context).pushNamed(

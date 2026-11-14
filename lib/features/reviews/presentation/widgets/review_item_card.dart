@@ -15,12 +15,12 @@ class ReviewItemCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: context.surfaceCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(color: context.borderLight),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withOpacity(context.isDarkMode ? 0.18 : 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -50,7 +50,7 @@ class ReviewItemCard extends StatelessWidget {
                   style: GoogleFonts.cairo(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: context.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -63,7 +63,7 @@ class ReviewItemCard extends StatelessWidget {
                       fontSize: 13,
                       height: 1.4,
                       fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondary,
                     ),
                   ),
                 const SizedBox(height: 6),
@@ -78,7 +78,9 @@ class ReviewItemCard extends StatelessWidget {
                       size: 16,
                       color: starIndex < review.rating
                           ? const Color(0xFFF59E0B)
-                          : AppColors.borderStrong,
+                          : (context.isDarkMode
+                              ? AppColors.darkBorderStrong
+                              : AppColors.lightBorderStrong),
                     ),
                   ),
                 ),

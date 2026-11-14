@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -23,12 +25,103 @@ class ServiceDetailsScreen extends StatefulWidget {
 class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
   final PageController _imageController = PageController();
   int _currentImageIndex = 0;
+  Timer? _autoPlayTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startAutoPlay();
+  }
 
   @override
   void dispose() {
+    _stopAutoPlay();
     _imageController.dispose();
     super.dispose();
   }
+
+  void _startAutoPlay() {
+    _stopAutoPlay();
+    _autoPlayTimer = Timer.periodic(const Duration(milliseconds: 3200), (timer) {
+      if (!mounted || !_imageController.hasClients) return;
+      final images = _getResolvedImages();
+      if (images.length <= 1) return;
+
+      final nextPage = (_currentImageIndex + 1) % images.length;
+      _imageController.animateToPage(
+        nextPage,
+        duration: const Duration(milliseconds: 700),
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
+  void _stopAutoPlay() {
+    _autoPlayTimer?.cancel();
+    _autoPlayTimer = null;
+  }
+
+  List<String> _getResolvedImages() {
+    try {
+      final homeController = context.read<HomeController>();
+      final item = homeController.allServices.firstWhere(
+        (s) => s.id == widget.service.id,
+        orElse: () => widget.service,
+      );
+      final imgs = item.allImages;
+      if (imgs.isNotEmpty) return imgs;
+    } catch (_) {}
+    return widget.service.allImages;
+  }
+
+  Widget _buildHeaderImage(BuildContext context, String url) {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _headerPlaceholder(context),
+      );
+    } else if (url.startsWith('data:image')) {
+      try {
+        final comma = url.indexOf(',');
+        final b64 = comma != -1 ? url.substring(comma + 1) : url;
+        return Image.memory(
+          base64Decode(b64),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _headerPlaceholder(context),
+        );
+      } catch (_) {
+        return _headerPlaceholder(context);
+      }
+    } else if (url.isNotEmpty) {
+      return Image.asset(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _headerPlaceholder(context),
+      );
+    } else {
+      return _headerPlaceholder(context);
+    }
+  }
+
+  Widget _headerPlaceholder(BuildContext context) {
+    return Container(
+      color: context.surfaceSection,
+      child: Center(
+        child: Icon(Icons.image, size: 50, color: context.textTertiary),
+      ),
+    );
+  }
+
+  Color _badgeBgColor(BuildContext context) =>
+      context.isDarkMode ? AppColors.darkSurfaceWarm : const Color(0xFFFDF8F3);
+
+  Color _badgeBorderColor(BuildContext context) => context.isDarkMode
+      ? AppColors.darkBorderChipSelected
+      : const Color(0xFFF4E8DC);
+
+  Color _warmAccentColor(BuildContext context) =>
+      context.isDarkMode ? AppColors.goldYellow : const Color(0xFF8C5A2B);
 
   @override
   Widget build(BuildContext context) {
@@ -45,8 +138,8 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     final currentItem = homeItem.copyWith(isFavorite: isFav);
 
     // الصور الحقيقية من Supabase
-    final images = currentItem.images.isNotEmpty
-        ? currentItem.images
+    final images = currentItem.allImages.isNotEmpty
+        ? currentItem.allImages
         : (currentItem.imageUrl.isNotEmpty ? [currentItem.imageUrl] : <String>[]);
 
     // السعة الحقيقية من Supabase
@@ -61,7 +154,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     final priceDisplay = currentItem.price > 0 ? currentItem.formattedPrice : 'حسب الطلب';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: context.backgroundColor,
       body: Stack(
         children: [
           // المحتوى القابل للتمرير
@@ -79,23 +172,19 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                         PageView.builder(
                           controller: _imageController,
                           itemCount: images.length,
-                          onPageChanged: (i) => setState(() => _currentImageIndex = i),
+                          onPageChanged: (i) {
+                            setState(() => _currentImageIndex = i);
+                            _startAutoPlay();
+                          },
                           itemBuilder: (context, index) {
-                            return Image.network(
-                              images[index],
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                color: AppColors.surfaceSection,
-                                child: Icon(Icons.image, size: 50, color: AppColors.textTertiary),
-                              ),
-                            );
+                            return _buildHeaderImage(context, images[index]);
                           },
                         )
                       else
                         Container(
-                          color: AppColors.surfaceSection,
+                          color: context.surfaceSection,
                           child: Center(
-                            child: Icon(Icons.image_not_supported_outlined, size: 50, color: AppColors.textTertiary),
+                            child: Icon(Icons.image_not_supported_outlined, size: 50, color: context.textTertiary),
                           ),
                         ),
 
@@ -223,6 +312,72 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                         ),
                       ),
 
+                      // أزرار التنقل اليدوي السريع بين الصور (تظهر إذا كانت أكثر من صورة)
+                      if (images.length > 1)
+                        Positioned(
+                          left: 12,
+                          right: 12,
+                          top: 0,
+                          bottom: 0,
+                          child: Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // زر الصورة السابقة
+                                GestureDetector(
+                                  onTap: () {
+                                    final prev = (_currentImageIndex - 1 + images.length) % images.length;
+                                    _imageController.animateToPage(
+                                      prev,
+                                      duration: const Duration(milliseconds: 380),
+                                      curve: Curves.easeInOutCubic,
+                                    );
+                                    _startAutoPlay();
+                                  },
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.38),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.chevron_left_rounded,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                                // زر الصورة التالية
+                                GestureDetector(
+                                  onTap: () {
+                                    final next = (_currentImageIndex + 1) % images.length;
+                                    _imageController.animateToPage(
+                                      next,
+                                      duration: const Duration(milliseconds: 380),
+                                      curve: Curves.easeInOutCubic,
+                                    );
+                                    _startAutoPlay();
+                                  },
+                                  child: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.38),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
                       // مؤشرات صور العرض (إذا كانت أكثر من صورة)
                       if (images.length > 1)
                         Positioned(
@@ -233,17 +388,55 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: List.generate(
                               images.length,
-                              (index) => AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                margin: const EdgeInsets.symmetric(horizontal: 3),
-                                width: _currentImageIndex == index ? 22 : 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: _currentImageIndex == index
-                                      ? Colors.white
-                                      : Colors.white54,
-                                  borderRadius: BorderRadius.circular(3),
+                              (index) => GestureDetector(
+                                onTap: () {
+                                  _imageController.animateToPage(
+                                    index,
+                                    duration: const Duration(milliseconds: 380),
+                                    curve: Curves.easeInOutCubic,
+                                  );
+                                  _startAutoPlay();
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                                  width: _currentImageIndex == index ? 22 : 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: _currentImageIndex == index
+                                        ? Colors.white
+                                        : Colors.white54,
+                                    borderRadius: BorderRadius.circular(3),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        blurRadius: 3,
+                                      ),
+                                    ],
+                                  ),
                                 ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      // عدّاد الصور
+                      if (images.length > 1)
+                        Positioned(
+                          bottom: 34,
+                          left: 16,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.45),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '${_currentImageIndex + 1} / ${images.length}',
+                              style: GoogleFonts.cairo(
+                                color: Colors.white,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -252,13 +445,13 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                   ),
                 ),
 
-                // 2. الحاوية البيضاء المتداخلة مع الهيدر
+                // 2. الحاوية المتداخلة مع الهيدر
                 Transform.translate(
                   offset: const Offset(0, -26),
                   child: Container(
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF7F8FA),
-                      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                    decoration: BoxDecoration(
+                      color: context.backgroundColor,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Column(
@@ -280,7 +473,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                     style: GoogleFonts.cairo(
                                       fontSize: 24,
                                       fontWeight: FontWeight.w900,
-                                      color: const Color(0xFF1E2538),
+                                      color: context.textPrimary,
                                       height: 1.2,
                                     ),
                                   ),
@@ -290,7 +483,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                     style: GoogleFonts.cairo(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF8F95A3),
+                                      color: context.textSecondary,
                                     ),
                                   ),
                                 ],
@@ -301,9 +494,10 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 5),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFDF8F3),
+                                color: _badgeBgColor(context),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFF4E8DC)),
+                                border: Border.all(
+                                    color: _badgeBorderColor(context)),
                               ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -318,7 +512,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                     style: GoogleFonts.cairo(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF8C5A2B),
+                                      color: _warmAccentColor(context),
                                     ),
                                   ),
                                 ],
@@ -335,6 +529,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                             // السعر الفعلي
                             Expanded(
                               child: _buildQuickStatCard(
+                                context: context,
                                 icon: Icons.account_balance_wallet_outlined,
                                 value: priceDisplay,
                                 label: 'السعر',
@@ -344,6 +539,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                             // السعة الفعلية
                             Expanded(
                               child: _buildQuickStatCard(
+                                context: context,
                                 icon: Icons.people_outline_rounded,
                                 value: capacityDisplay,
                                 label: 'السعة',
@@ -353,6 +549,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                             // المدينة الفعلية
                             Expanded(
                               child: _buildQuickStatCard(
+                                context: context,
                                 icon: Icons.location_on_outlined,
                                 value: locationDisplay,
                                 label: 'المدينة',
@@ -365,6 +562,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                         if (currentItem.description.trim().isNotEmpty) ...[
                           const SizedBox(height: 16),
                           _buildSectionContainer(
+                            context: context,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -373,7 +571,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                   style: GoogleFonts.cairo(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF1E2538),
+                                    color: context.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
@@ -383,7 +581,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
                                     height: 1.7,
-                                    color: const Color(0xFF5A6275),
+                                    color: context.textSecondary,
                                   ),
                                 ),
                               ],
@@ -395,6 +593,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                         if (currentItem.occasions.isNotEmpty) ...[
                           const SizedBox(height: 16),
                           _buildSectionContainer(
+                            context: context,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -403,7 +602,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                   style: GoogleFonts.cairo(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF1E2538),
+                                    color: context.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -415,17 +614,17 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 18, vertical: 8),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFFDF8F3),
+                                        color: _badgeBgColor(context),
                                         borderRadius: BorderRadius.circular(20),
                                         border: Border.all(
-                                            color: const Color(0xFFF5EAE0)),
+                                            color: _badgeBorderColor(context)),
                                       ),
                                       child: Text(
                                         occ,
                                         style: GoogleFonts.cairo(
                                           fontSize: 13,
                                           fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF8C5A2B),
+                                          color: _warmAccentColor(context),
                                         ),
                                       ),
                                     );
@@ -440,6 +639,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                         if (currentItem.workingHours.isNotEmpty) ...[
                           const SizedBox(height: 16),
                           _buildSectionContainer(
+                            context: context,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -452,24 +652,24 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                       style: GoogleFonts.cairo(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w800,
-                                        color: const Color(0xFF1E2538),
+                                        color: context.textPrimary,
                                       ),
                                     ),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFFDF8F3),
+                                        color: _badgeBgColor(context),
                                         borderRadius: BorderRadius.circular(14),
                                         border: Border.all(
-                                            color: const Color(0xFFF5EAE0)),
+                                            color: _badgeBorderColor(context)),
                                       ),
                                       child: Row(
                                         children: [
-                                          const Icon(
+                                          Icon(
                                             Icons.calendar_month_outlined,
                                             size: 13,
-                                            color: Color(0xFF8C5A2B),
+                                            color: _warmAccentColor(context),
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
@@ -477,7 +677,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                             style: GoogleFonts.cairo(
                                               fontSize: 11,
                                               fontWeight: FontWeight.w700,
-                                              color: const Color(0xFF8C5A2B),
+                                              color: _warmAccentColor(context),
                                             ),
                                           ),
                                         ],
@@ -496,6 +696,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                     itemBuilder: (context, index) {
                                       final item = currentItem.workingHours[index];
                                       return _buildDayCard(
+                                        context: context,
                                         day: item['day'] ?? '',
                                         status: item['status'] ?? 'متاح',
                                         time: item['time'] ?? '',
@@ -512,6 +713,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                         if (currentItem.features.isNotEmpty) ...[
                           const SizedBox(height: 16),
                           _buildSectionContainer(
+                            context: context,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -520,7 +722,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                   style: GoogleFonts.cairo(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF1E2538),
+                                    color: context.textPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -532,24 +734,24 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: 14, vertical: 8),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFFFDFBF7),
+                                        color: context.surfaceWarm,
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                            color: const Color(0xFFEFEBE4)),
+                                            color: context.borderDefault),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const Icon(Icons.check_circle_rounded,
+                                          Icon(Icons.check_circle_rounded,
                                               size: 16,
-                                              color: Color(0xFF8C5A2B)),
+                                              color: _warmAccentColor(context)),
                                           const SizedBox(width: 6),
                                           Text(
                                             feature,
                                             style: GoogleFonts.cairo(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
-                                              color: const Color(0xFF1E2538),
+                                              color: context.textPrimary,
                                             ),
                                           ),
                                         ],
@@ -637,7 +839,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                         // ],
 
                         const SizedBox(height: 8),
-                        const Divider(color: Color(0xFFE5E7EB), height: 32),
+                        Divider(color: context.borderLight, height: 32),
                         const SizedBox(height: 4),
 
                         // 9. قسم التقييمات الحي من Supabase (جدول reviews)
@@ -665,12 +867,13 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             child: Container(
               padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
               decoration: BoxDecoration(
-                color: AppColors.surfaceCard,
+                color: context.surfaceCard,
                 border: Border(
-                    top: BorderSide(color: AppColors.borderLight, width: 1)),
+                    top: BorderSide(color: context.borderLight, width: 1)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withOpacity(
+                        context.isDarkMode ? 0.25 : 0.04),
                     blurRadius: 16,
                     offset: const Offset(0, -4),
                   ),
@@ -690,7 +893,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                             style: GoogleFonts.cairo(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.textTertiary,
+                              color: context.textTertiary,
                             ),
                           ),
                           Text(
@@ -698,7 +901,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                             style: GoogleFonts.cairo(
                               fontSize: 18,
                               fontWeight: FontWeight.w900,
-                              color: AppColors.textPrimary,
+                              color: context.textPrimary,
                             ),
                           ),
                         ],
@@ -728,16 +931,19 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
   }
 
   // بطاقة الأقسام (Section Card)
-  Widget _buildSectionContainer({required Widget child}) {
+  Widget _buildSectionContainer({
+    required BuildContext context,
+    required Widget child,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: context.surfaceCard,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(color: context.borderLight),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.015),
+            color: Colors.black.withOpacity(context.isDarkMode ? 0.18 : 0.015),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -749,6 +955,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
 
   // بطاقات المؤشرات السريعة (السعر - السعة - المدينة)
   Widget _buildQuickStatCard({
+    required BuildContext context,
     required IconData icon,
     required String value,
     required String label,
@@ -756,12 +963,12 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
+        color: context.surfaceCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(color: context.borderLight),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.015),
+            color: Colors.black.withOpacity(context.isDarkMode ? 0.18 : 0.015),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -770,7 +977,13 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 24, color: const Color(0xFFA07449)),
+          Icon(
+            icon,
+            size: 24,
+            color: context.isDarkMode
+                ? AppColors.goldYellow
+                : const Color(0xFFA07449),
+          ),
           const SizedBox(height: 8),
           Text(
             value,
@@ -780,7 +993,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             style: GoogleFonts.cairo(
               fontSize: 14,
               fontWeight: FontWeight.w800,
-              color: const Color(0xFF1E2538),
+              color: context.textPrimary,
             ),
           ),
           const SizedBox(height: 2),
@@ -789,7 +1002,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             style: GoogleFonts.cairo(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF8F95A3),
+              color: context.textSecondary,
             ),
           ),
         ],
@@ -799,17 +1012,19 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
 
   // بطاقة يوم العمل
   Widget _buildDayCard({
+    required BuildContext context,
     required String day,
     required String status,
     required String time,
   }) {
+    final accentColor = _warmAccentColor(context);
     return Container(
       width: 140,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFDFBF7),
+        color: context.surfaceWarm,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF5EFE6)),
+        border: Border.all(color: context.borderDefault),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -823,14 +1038,14 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                 style: GoogleFonts.cairo(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
-                  color: const Color(0xFF1E2538),
+                  color: context.textPrimary,
                 ),
               ),
               Container(
                 width: 8,
                 height: 8,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF10B981),
+                  color: AppColors.success,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -841,32 +1056,36 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             style: GoogleFonts.cairo(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF8C5A2B),
+              color: accentColor,
             ),
           ),
           if (time.isNotEmpty)
             Container(
               padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
               decoration: BoxDecoration(
-                color: AppColors.surfaceSection,
+                color: context.surfaceSection,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.borderLight),
+                border: Border.all(color: context.borderLight),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.access_time_rounded,
                     size: 13,
-                    color: Color(0xFF8C5A2B),
+                    color: accentColor,
                   ),
                   const SizedBox(width: 4),
-                  Text(
-                    time,
-                    style: GoogleFonts.cairo(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF8C5A2B),
+                  Flexible(
+                    child: Text(
+                      time,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.cairo(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: accentColor,
+                      ),
                     ),
                   ),
                 ],

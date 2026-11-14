@@ -62,7 +62,7 @@ class _ReviewsSectionWidgetState extends State<ReviewsSectionWidget> {
                   style: GoogleFonts.cairo(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF1E2538),
+                    color: context.textPrimary,
                   ),
                 ),
                 if (count > 0) ...[
@@ -71,15 +71,16 @@ class _ReviewsSectionWidgetState extends State<ReviewsSectionWidget> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
+                      color: context.surfaceSection,
                       borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: context.borderLight),
                     ),
                     child: Text(
                       '$count',
                       style: GoogleFonts.cairo(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF6B7280),
+                        color: context.textSecondary,
                       ),
                     ),
                   ),
@@ -106,7 +107,7 @@ class _ReviewsSectionWidgetState extends State<ReviewsSectionWidget> {
                       style: GoogleFonts.cairo(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF6B7280),
+                        color: context.textSecondary,
                       ),
                     ),
                   ),
@@ -149,9 +150,9 @@ class _ReviewsSectionWidgetState extends State<ReviewsSectionWidget> {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             decoration: BoxDecoration(
-              color: AppColors.surfaceCard,
+              color: context.surfaceCard,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.borderLight),
+              border: Border.all(color: context.borderLight),
             ),
             child: Center(
               child: Column(
@@ -159,14 +160,14 @@ class _ReviewsSectionWidgetState extends State<ReviewsSectionWidget> {
                   Icon(
                     Icons.rate_review_outlined,
                     size: 32,
-                    color: AppColors.textTertiary,
+                    color: context.textTertiary,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'لا توجد تعليقات بعد في قاعدة البيانات.',
                     style: GoogleFonts.cairo(
                       fontSize: 13,
-                      color: AppColors.textSecondary,
+                      color: context.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

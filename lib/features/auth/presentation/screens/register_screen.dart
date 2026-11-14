@@ -195,10 +195,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: AppColors.surfaceWarm,
       appBar: AppBar(
-        // leading: IconButton(
-        //   //icon: const Icon(Icons.arrow_forward_rounded),
-        //   onPressed: isLoading ? null : () => Navigator.of(context).pop(),
-        // ),
+        automaticallyImplyLeading: false,
         title: Text(
           AppStrings.registerTitle,
           style: GoogleFonts.cairo(fontWeight: FontWeight.w700),
@@ -216,26 +213,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 8),
                   // الشعار أول شيء في الصفحة
                   Center(
-                    child: Container(
-                      width: 76,
-                      height: 76,
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.12),
-                            blurRadius: 14,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      clipBehavior: Clip.antiAlias,
+                    child: SizedBox(
+                      width: 88,
+                      height: 88,
                       child: Image.asset(
                         AppAssets.appLogo,
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) => Container(
-                          color: AppColors.primaryVeryLight,
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                           child: const Icon(
                             Icons.celebration_rounded,
                             color: AppColors.primary,

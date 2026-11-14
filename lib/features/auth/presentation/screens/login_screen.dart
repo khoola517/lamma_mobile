@@ -89,26 +89,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 12),
                   // الشعار أول شيء في الصفحة
                   Center(
-                    child: Container(
-                      width: 84,
-                      height: 84,
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.12),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      clipBehavior: Clip.antiAlias,
+                    child: SizedBox(
+                      width: 96,
+                      height: 96,
                       child: Image.asset(
                         AppAssets.appLogo,
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) => Container(
-                          color: AppColors.primaryVeryLight,
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryLight,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                           child: const Icon(
                             Icons.celebration_rounded,
                             color: AppColors.primary,

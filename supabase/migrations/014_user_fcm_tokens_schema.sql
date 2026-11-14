@@ -108,29 +108,14 @@ BEGIN
     WHERE fcm_token = v_clean_token;
 
     IF FOUND THEN
-        -- التوكن مرتبط بحساب آخر
-        IF v_existing.user_id <> v_user_id THEN
-            -- رفض نقل ملكية التوكن النشط تماماً
-            IF v_existing.is_active = true THEN
-                RAISE EXCEPTION 'This device token is currently active for another account. The previous session must be unregistered before claiming this token.';
-            END IF;
-
-            -- التوكن غير نشط (تم إلغاء ربطه مسبقاً): يُسمح بنقله بأمان للحساب الجديد
-            UPDATE public.user_fcm_tokens
-            SET user_id = v_user_id,
-                platform = v_normalized_platform,
-                device_info = COALESCE(p_device_info, '{}'::jsonb),
-                is_active = true
-            WHERE id = v_existing.id;
-
-        ELSE
-            -- التوكن ينتمي لنفس المستخدم الحالي: إعادة تنشيطه وتحديث بياناته
-            UPDATE public.user_fcm_tokens
-            SET platform = v_normalized_platform,
-                device_info = COALESCE(p_device_info, '{}'::jsonb),
-                is_active = true
-            WHERE id = v_existing.id;
-        END IF;
+        -- التوكن مسجل مسبقاً (سواء لنفس الحساب أو لحساب سابق على نفس الجهاز):
+        -- يتم تحديثه ونقله للحساب الحالي وتفعيله فوراً لضمان استلام الإشعارات
+        UPDATE public.user_fcm_tokens
+        SET user_id = v_user_id,
+            platform = v_normalized_platform,
+            device_info = COALESCE(p_device_info, '{}'::jsonb),
+            is_active = true
+        WHERE id = v_existing.id;
 
     ELSE
         -- توكن جديد: إدراجه في الجدول

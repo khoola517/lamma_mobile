@@ -53,6 +53,21 @@ class ServiceItemModel {
     return '$formattedNum $priceUnit';
   }
 
+  /// إرجاع قائمة كافة الصور المتاحة للخدمة (الصورة الرئيسية + صور المعرض)
+  List<String> get allImages {
+    final list = <String>[];
+    if (imageUrl.trim().isNotEmpty) {
+      list.add(imageUrl.trim());
+    }
+    for (final img in images) {
+      final trimmed = img.trim();
+      if (trimmed.isNotEmpty && !list.contains(trimmed)) {
+        list.add(trimmed);
+      }
+    }
+    return list;
+  }
+
   ServiceItemModel copyWith({
     String? id,
     String? title,
@@ -145,9 +160,18 @@ class ServiceItemModel {
     if (json['service_images'] is List) {
       resolvedImages = (json['service_images'] as List)
           .map((img) => (img is Map ? img['image_url'] : img.toString()) as String)
+          .where((url) => url.trim().isNotEmpty)
           .toList();
     } else if (json['images'] is List) {
-      resolvedImages = (json['images'] as List).map((e) => e.toString()).toList();
+      resolvedImages = (json['images'] as List)
+          .map((e) => e.toString().trim())
+          .where((url) => url.isNotEmpty)
+          .toList();
+    }
+
+    final mainImage = (json['image_url'] ?? json['imageUrl'] ?? '') as String;
+    if (mainImage.trim().isNotEmpty && !resolvedImages.contains(mainImage.trim())) {
+      resolvedImages.insert(0, mainImage.trim());
     }
 
     // Capacity as string or int

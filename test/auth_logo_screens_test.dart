@@ -97,18 +97,32 @@ void main() {
       expect(imageFinder, findsOneWidget);
     });
 
-    testWidgets('RegisterScreen displays logo image at the top',
+    testWidgets('RegisterScreen displays logo image at the top and hides back button',
         (WidgetTester tester) async {
       final mockAuth = MockAuthController();
 
       await tester.pumpWidget(
         MaterialApp(
-          home: ChangeNotifierProvider<AuthController>.value(
-            value: mockAuth,
-            child: const RegisterScreen(),
+          routes: {
+            AppRoutes.register: (_) => ChangeNotifierProvider<AuthController>.value(
+                  value: mockAuth,
+                  child: const RegisterScreen(),
+                ),
+          },
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () => Navigator.of(context).pushNamed(AppRoutes.register),
+                child: const Text('Go to Register'),
+              ),
+            ),
           ),
         ),
       );
+
+      // Navigate to Register to test back button behavior when canPop is true
+      await tester.tap(find.text('Go to Register'));
+      await tester.pumpAndSettle();
 
       final imageFinder = find.byWidgetPredicate(
         (widget) =>
@@ -117,6 +131,11 @@ void main() {
             (widget.image as AssetImage).assetName == AppAssets.appLogo,
       );
       expect(imageFinder, findsOneWidget);
+
+      // Verify AppBar has no leading back button icon
+      final appBar = tester.widget<AppBar>(find.byType(AppBar));
+      expect(appBar.automaticallyImplyLeading, isFalse);
+      expect(find.byType(BackButton), findsNothing);
     });
   });
 }

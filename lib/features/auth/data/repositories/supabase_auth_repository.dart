@@ -25,6 +25,9 @@ class SupabaseAuthRepository implements AuthRepository {
     final session = _client.auth.currentSession;
     if (user == null || session == null) return null;
 
+    // مزامنة التوكن في الخلفية عند استعادة المستخدم
+    FcmService.instance.syncTokenWithSupabase();
+
     return await _getUserProfile(user);
   }
 
@@ -44,6 +47,9 @@ class SupabaseAuthRepository implements AuthRepository {
       if (user == null) {
         throw Exception('تعذر تسجيل الدخول، يرجى التأكد من البيانات المدخلة.');
       }
+
+      // مزامنة فورية لتوكن الإشعارات مع حساب المستخدم الذي سجل الدخول
+      FcmService.instance.syncTokenWithSupabase();
 
       return await _getUserProfile(user);
     } catch (e) {
@@ -101,6 +107,9 @@ class SupabaseAuthRepository implements AuthRepository {
       if (res.session == null) {
         return AuthResult.emailConfirmationRequired(user: newUser);
       }
+
+      // مزامنة فورية لتوكن الإشعارات مع حساب المستخدم الجديد
+      FcmService.instance.syncTokenWithSupabase();
 
       return AuthResult.success(
         user: newUser,

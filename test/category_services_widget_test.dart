@@ -411,7 +411,7 @@ void main() {
     expect(find.text('الأندلس لتنسيق الكوش الملكية'), findsNothing);
 
     // Pop back to HomeScreen
-    final backButtonFinder = find.byIcon(Icons.arrow_forward_ios_rounded);
+    final backButtonFinder = find.byIcon(Icons.arrow_back);
     expect(backButtonFinder, findsOneWidget);
     await tester.tap(backButtonFinder);
     await tester.pumpAndSettle();

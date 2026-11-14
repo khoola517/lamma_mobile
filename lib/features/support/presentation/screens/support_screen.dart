@@ -66,6 +66,13 @@ class _SupportScreenState extends State<SupportScreen>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppColors.primary,
+          ),
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
         title: Text(
           'مركز المساعدة والشكاوى',
           style: GoogleFonts.cairo(

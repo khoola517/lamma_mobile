@@ -464,12 +464,11 @@ class _PackageCustomizationScreenState
                                     return;
                                   }
 
-                                  final selectedServiceIds = services
+                                  final includedServices = services
                                       .where((s) => s.isIncluded)
-                                      .map((s) => s.id)
                                       .toList();
 
-                                  if (selectedServiceIds.isEmpty) {
+                                  if (includedServices.isEmpty) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
@@ -489,6 +488,7 @@ class _PackageCustomizationScreenState
 
                                   final bookingsController =
                                       context.read<BookingsController>();
+                                  final List<String> createdBookingCodes = [];
 
                                   try {
                                     final effectiveUserId = currentUser?.id ??
@@ -505,62 +505,58 @@ class _PackageCustomizationScreenState
                                       } catch (_) {}
                                     }
 
-                                    String? packageImageUrl;
-                                    String? packageVendor;
-                                    final includedServices =
-                                        services.where((s) => s.isIncluded).toList();
-                                    if (includedServices.isNotEmpty) {
-                                      final withImg = includedServices.firstWhere(
-                                        (s) =>
-                                            s.imageUrl != null &&
-                                            s.imageUrl!.isNotEmpty,
-                                        orElse: () => includedServices.first,
+                                    // إنشاء حجز مستقل لكل خدمة مختارة بسعرها واسمها وصورتها الخاصة
+                                    for (final service in includedServices) {
+                                      final booking =
+                                          await bookingsController.createBooking(
+                                        eventType: service.name,
+                                        eventDate: controller.request.eventDate,
+                                        timeSlot: 'الفترة المسائية',
+                                        serviceIds: [service.id],
+                                        packageId: packageUuid ??
+                                            controller.savedPackageId,
+                                        location: controller.request.location,
+                                        guestCount:
+                                            controller.request.guestsCount,
+                                        customerId: effectiveUserId,
+                                        budget: service.price,
+                                        notes:
+                                            'حجز خدمة ${service.name} ضمن ${controller.request.eventType} (${controller.selectedPackage?.name ?? "باقة ذكية"})',
+                                        serviceImageUrl: service.imageUrl,
+                                        vendorName: service.vendor,
+                                        category: 'باقة مناسبة',
                                       );
-                                      packageImageUrl = withImg.imageUrl;
-                                      packageVendor = withImg.vendor;
+                                      createdBookingCodes
+                                          .add(booking.bookingCode);
                                     }
-
-                                    final booking =
-                                        await bookingsController.createBooking(
-                                      eventType: controller.request.eventType,
-                                      eventDate: controller.request.eventDate,
-                                      timeSlot: 'الفترة المسائية',
-                                      serviceIds: selectedServiceIds,
-                                      packageId: packageUuid ??
-                                          controller.savedPackageId,
-                                      location: controller.request.location,
-                                      guestCount:
-                                          controller.request.guestsCount,
-                                      customerId: effectiveUserId,
-                                      budget: total,
-                                      notes:
-                                          'حجز باقة ${controller.selectedPackage?.name ?? "ذكية"} تشمل ${selectedServiceIds.length} خدمات مخصصة',
-                                      serviceImageUrl: packageImageUrl,
-                                      vendorName: packageVendor,
-                                      category: 'باقة مناسبة',
-                                    );
 
                                     if (context.mounted) {
                                       Navigator.of(context).pushReplacementNamed(
                                         AppRoutes.bookingSuccess,
-                                        arguments: booking.bookingCode,
+                                        arguments:
+                                            createdBookingCodes.join(' ، #'),
                                       );
                                     }
                                   } catch (e) {
                                     if (context.mounted) {
+                                      final rawError = e
+                                          .toString()
+                                          .replaceAll('Exception: ', '');
+                                      final msg = createdBookingCodes.isNotEmpty
+                                          ? 'تم حجز ${createdBookingCodes.length} من ${includedServices.length} خدمات، وتعذر إكمال البقية: $rawError'
+                                          : rawError;
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            e
-                                                .toString()
-                                                .replaceAll('Exception: ', ''),
+                                            msg,
                                             style: GoogleFonts.cairo(
                                                 fontWeight: FontWeight.w600),
                                           ),
                                           backgroundColor: AppColors.error,
                                           behavior: SnackBarBehavior.floating,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(10),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
                                           ),
                                         ),
                                       );

@@ -47,32 +47,17 @@ class _AuthGateScreenState extends State<AuthGateScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // صورة الشعار بدلاً من كلمة خدمتي مع حواف ناعمة وظل أنيق
-            Container(
-              width: 130,
-              height: 130,
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(28),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.18),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
+            // صورة الشعار بدلاً من كلمة خدمتي بخلفية شفافة وانسيابية
+            SizedBox(
+              width: 160,
+              height: 160,
               child: Image.asset(
                 AppAssets.appLogo,
                 fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => Container(
+                errorBuilder: (context, error, stackTrace) => const Icon(
+                  Icons.celebration_rounded,
                   color: Colors.white,
-                  child: const Icon(
-                    Icons.celebration_rounded,
-                    color: AppColors.primary,
-                    size: 58,
-                  ),
+                  size: 64,
                 ),
               ),
             ),

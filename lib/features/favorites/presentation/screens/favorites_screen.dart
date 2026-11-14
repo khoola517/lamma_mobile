@@ -112,6 +112,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             priceText: service.formattedPrice,
             rating: service.rating,
             imageUrl: service.imageUrl,
+            images: service.allImages,
             isFavorite: true,
             onTap: () {
               Navigator.of(context)

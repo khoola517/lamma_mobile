@@ -363,6 +363,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             priceText: service.formattedPrice,
                             rating: service.rating,
                             imageUrl: service.imageUrl,
+                            images: service.allImages,
                             isFavorite: isFav,
                             onTap: () async {
                               final favController = context.read<FavoritesController>();

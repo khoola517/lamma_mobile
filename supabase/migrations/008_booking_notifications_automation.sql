@@ -238,31 +238,49 @@ REVOKE ALL ON FUNCTION public.create_booking_atomic FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.create_booking_atomic TO authenticated;
 
 
--- 2. محفّز (Trigger) تلقائي لإرسال الإشعارات عند تغيير حالة الحجز (مثل الإلغاء)
+-- 2. محفّز (Trigger) تلقائي لإرسال الإشعارات عند تغيير حالة الحجز لكافة الحالات (تأكيد، قيد التنفيذ، مكتمل، إلغاء)
 CREATE OR REPLACE FUNCTION public.on_booking_status_change_notifications()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
+DECLARE
+  v_title TEXT;
+  v_body TEXT;
+  v_type TEXT;
 BEGIN
   IF NEW.status IS NOT DISTINCT FROM OLD.status THEN
     RETURN NEW;
   END IF;
 
-  -- في حالة إلغاء الحجز
-  IF NEW.status = 'cancelled' THEN
-    -- إشعار للعميل
-    INSERT INTO public.notifications (user_id, title, body, type, related_booking_id)
-    VALUES (
-      NEW.customer_id,
-      'تم إلغاء الحجز',
-      'تم إلغاء حجزك رقم (' || NEW.booking_code || ').',
-      'booking_cancelled',
-      NEW.id
-    );
+  -- تحديد نص ونوع الإشعار بحسب الحالة الجديدة
+  IF NEW.status = 'confirmed' THEN
+    v_title := 'تم تأكيد حجزك بنجاح 🎉';
+    v_body := 'وافق مقدم الخدمة على حجزك رقم (' || NEW.booking_code || ') وأصبح مؤكداً.';
+    v_type := 'booking_confirmed';
 
-    -- إشعار لكافة مزودي الخدمات المرتبطين بهذا الحجز
+  ELSIF NEW.status = 'in_progress' THEN
+    v_title := 'حجزك قيد التنفيذ ⏳';
+    v_body := 'بدأ العمل على طلبك رقم (' || NEW.booking_code || ') وهو قيد التنفيذ الآن.';
+    v_type := 'booking_in_progress';
+
+  ELSIF NEW.status = 'completed' THEN
+    v_title := 'اكتمل حجزك بنجاح ✅';
+    v_body := 'تم إكمال حجزك رقم (' || NEW.booking_code || ') بنجاح. شكراً لاختيارك خِدمتي!';
+    v_type := 'booking_completed';
+
+  ELSIF NEW.status = 'attention_needed' THEN
+    v_title := 'تحديث بخصوص طلبك ⚠️';
+    v_body := 'حجزك رقم (' || NEW.booking_code || ') يتطلب مراجعتك لاتخاذ إجراء.';
+    v_type := 'booking_attention_needed';
+
+  ELSIF NEW.status = 'cancelled' THEN
+    v_title := 'تم إلغاء الحجز ❌';
+    v_body := 'تم إلغاء حجزك رقم (' || NEW.booking_code || ').';
+    v_type := 'booking_cancelled';
+
+    -- إشعار لكافة مزودي الخدمات المرتبطين بهذا الحجز عند الإلغاء
     INSERT INTO public.notifications (user_id, title, body, type, related_booking_id)
     SELECT DISTINCT
       pp.user_id,
@@ -274,6 +292,18 @@ BEGIN
     JOIN public.services s ON s.id = bi.service_id
     JOIN public.provider_profiles pp ON pp.id = s.provider_id
     WHERE bi.booking_id = NEW.id AND pp.user_id IS NOT NULL;
+  END IF;
+
+  -- إرسال الإشعار للعميل لكافة الحالات التي تم تحديد عنوان لها
+  IF v_title IS NOT NULL THEN
+    INSERT INTO public.notifications (user_id, title, body, type, related_booking_id)
+    VALUES (
+      NEW.customer_id,
+      v_title,
+      v_body,
+      v_type,
+      NEW.id
+    );
   END IF;
 
   RETURN NEW;

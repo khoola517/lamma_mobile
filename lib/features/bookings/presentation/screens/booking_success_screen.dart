@@ -94,12 +94,15 @@ class BookingSuccessScreen extends StatelessWidget {
                           color: AppColors.textSecondary,
                         ),
                       ),
-                      Text(
-                        '#$bookingCode',
-                        style: GoogleFonts.cairo(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
+                      Flexible(
+                        child: Text(
+                          '#$bookingCode',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.cairo(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ],
